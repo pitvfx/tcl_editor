@@ -1,21 +1,20 @@
 # Store the original puts command
-catch {rename puts original_puts}
+ catch {rename puts original_puts}
 
 # Create a global variable to store captured output
-set captured_output {}
+ set captured_output {}
 
 # Define a new puts command that captures output and calls the original
 proc puts {args} {
     global captured_output
     # Capture the output
     lappend captured_output [join $args]
-  }
+}
 
 proc run_code {} {
-    global captured_output
-    eval {[value this.editor]}
-    knob this.output [join $captured_output]
-    set captured_output {}
+    set ret "[eval [knob this.code]]"
+    get_and_clear_output
+    knob this.output $ret
 }
 
 # Function to get and clear the captured output
