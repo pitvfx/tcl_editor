@@ -4,8 +4,8 @@ import nuke
 import pyui
 
 from PySide2.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPlainTextEdit, QCompleter
-from PySide2.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics
-from PySide2.QtCore import QRegExp, Qt, QTimer
+from PySide2.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics, QFocusEvent
+from PySide2.QtCore import QRegExp, Qt, QTimer, QEvent
 
 
 class TCLSyntaxHighlighter(QSyntaxHighlighter):
@@ -35,17 +35,6 @@ class TCLSyntaxHighlighter(QSyntaxHighlighter):
                 length = expression.matchedLength()
                 self.setFormat(index, length, format)
                 index = expression.indexIn(text, index + length)
-
-class TCLAutocomplete:
-    def __init__(self, editor: 'TCLEditor'):
-        self.editor: TCLEditor = editor
-        self.completer = self.setup_completer()
-                          
-    def setup_completer(self) -> QCompleter:
-        completer = QCompleter(list(self.editor.commands.keys()), self.editor)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
-        completer.setCompletionMode(QCompleter.PopupCompletion)
-        return completer
 
 class CustomTooltip(QWidget):
     def __init__(self, parent=None):
@@ -97,38 +86,30 @@ class CustomTooltip(QWidget):
         if event.button() == Qt.LeftButton:
             self.hide()
         return super().mousePressEvent(event)
-    
+
 class TCLEditor(QPlainTextEdit):
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFont(QFont("Monospace", 12))
         self.commands = self.get_tcl_commands()
-        self.autocomplete = TCLAutocomplete(self)
+        self.completer = self.setup_completer()
         self.highlighter = TCLSyntaxHighlighter(self.commands.keys(), self.document())
-        self.completer = None
-        self.setCompleter(self.autocomplete.completer)
         self.custom_tooltip = CustomTooltip(self)
         # Set tab stop width
         font = self.font()
         fm = QFontMetrics(font)
         self.setTabStopDistance(4 * fm.horizontalAdvance(' '))
-        
         self.auto_pairs = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'"}
+        self.keep_focus = False
         
-    def setCompleter(self, completer: QCompleter):
-        if self.completer:
-            self.completer.activated.disconnect()
-
-        self.completer = completer
-
-        if not self.completer:
-            return
-
-        self.completer.setWidget(self)
-        self.completer.setCompletionMode(QCompleter.PopupCompletion)
-        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.completer.activated.connect(self.insertCompletion)
+    def setup_completer(self) -> QCompleter:
+        completer = QCompleter(list(self.commands.keys()), self)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setCompletionMode(QCompleter.PopupCompletion)
+        completer.setWidget(self)
+        completer.activated.connect(self.insertCompletion)
+        return completer
 
     def get_tcl_commands(self):
         json_path = Path(__file__).parent.joinpath('tcl_commands.json')
@@ -152,6 +133,8 @@ class TCLEditor(QPlainTextEdit):
             tc.movePosition(QTextCursor.EndOfWord)
             tc.insertText(completion[-extra:])
             self.setTextCursor(tc)
+            # reset completer
+            self.completer.setCompletionPrefix('')
             
     def textUnderCursor(self):
         tc = self.textCursor()
@@ -162,7 +145,6 @@ class TCLEditor(QPlainTextEdit):
             tc.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, 2)
             tc.select(QTextCursor.WordUnderCursor)
             word = tc.selectedText()
-
         return word
 
     def focusInEvent(self, event):
@@ -198,13 +180,14 @@ class TCLEditor(QPlainTextEdit):
         if ctrlOrShift and event.text() == '':
             return
 
-        eow = "~!@#$%^&*()_+{|:\"<>?,./'\\-"  # removed []]"};=
+        eow = "~!@#$%^&*()_+{|:\"<>?,./'\\-[]]};="
         hasModifier = (event.modifiers() != Qt.NoModifier) and not ctrlOrShift
         completionPrefix = self.textUnderCursor()
-
-        if not isShortcut and (hasModifier or event.text() == '' or
+        
+        if not isShortcut and (hasModifier or
                                len(completionPrefix) < 3 or
                                event.text()[-1] in eow):
+            
             self.completer.popup().hide()
             return
 
@@ -237,31 +220,32 @@ class TCLEditor(QPlainTextEdit):
             if self.custom_tooltip.isVisible():
                 self.custom_tooltip.hide()
                 return True
-            # Get the position of the mouse click
-            pos = event.pos()
-            
-            # Get the cursor at the mouse position
-            tc = self.cursorForPosition(pos)
-            
-            # Move to the start of the word
-            tc.movePosition(QTextCursor.StartOfWord, QTextCursor.MoveAnchor)
-            
-            # Move to the end of the word, keeping the anchor at the start
-            tc.movePosition(QTextCursor.EndOfWord, QTextCursor.KeepAnchor)
-            
-            # Get the selected word
-            word = tc.selectedText()
-            
-            description = self.get_command_description(word)
-            
-            if description:
-                global_pos = self.mapToGlobal(pos)
-                self.custom_tooltip.showTooltip(description, global_pos)
-            else:
-                self.custom_tooltip.hide()
-            
-            # The selection is only temporary and won't be visible
-            return True
+            if event.modifiers() == Qt.ControlModifier:
+                # Get the position of the mouse click
+                pos = event.pos()
+                
+                # Get the cursor at the mouse position
+                tc = self.cursorForPosition(pos)
+                
+                # Move to the start of the word
+                tc.movePosition(QTextCursor.StartOfWord, QTextCursor.MoveAnchor)
+                
+                # Move to the end of the word, keeping the anchor at the start
+                tc.movePosition(QTextCursor.EndOfWord, QTextCursor.KeepAnchor)
+                
+                # Get the selected word
+                word = tc.selectedText()
+                
+                description = self.get_command_description(word)
+                
+                if description:
+                    global_pos = self.mapToGlobal(pos)
+                    self.custom_tooltip.showTooltip(description, global_pos)
+                else:
+                    self.custom_tooltip.hide()
+                
+                # The selection is only temporary and won't be visible
+                return True
         
         super().mousePressEvent(event)
 class TCLEditorPanel(nuke.PanelNode):
@@ -278,7 +262,6 @@ class TCLEditorPanel(nuke.PanelNode):
 
     def build_panel(self):
         self.editor = nuke.PyCustom_Knob("editor", "", "tcl_editor.EditorKnob(nuke.thisNode())")
-        self.editor.setTooltip("Cunt")
         self.code = nuke.Multiline_Eval_String_Knob("code", "")
         self.code.setFlag(nuke.READ_ONLY|nuke.INVISIBLE)
         self.run_button = nuke.Script_Knob("run", "run", "run_code")
