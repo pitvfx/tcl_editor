@@ -12,9 +12,14 @@ proc puts {args} {
 }
 
 proc run_code {} {
-    set ret "[eval [knob this.code]]"
-    get_and_clear_output
-    knob this.output $ret
+    python {"print run code"}
+    eval [knob this.code]
+    set output [knob this.output]
+    set new_output [get_and_clear_output]
+    if {[llength $new_output] > 0} {
+        append output [join $new_output "\n"]\n
+    }
+    knob this.output $output
 }
 
 # Function to get and clear the captured output

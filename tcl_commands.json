@@ -1,0 +1,1041 @@
+{
+
+    "safe_mode": {
+        "params": [
+            "value",
+            "password"
+        ],
+        "docs": "<p>turns on/off security features </p><p>\"safe_mode\" disables certain scripting features that can make loading an unknown script unsafe. It tries to prevent any automatically-executing code from modifying any files or other state of your computer. Currently it disables the tcl open and exec commands inside expressions on knobs. Note that buttons and menu items can still run arbitrary things, but require the user to push them.</p><p>Since this makes it impossible to do some operations (like having a knob return a value from a file), tcl procedures you write can turn it off as needed, using a password you set.</p><p>safe_mode defaults to off for back-compatibility. Installations may want to add code to init.tcl to turn it on and set a password, then add code to temporarily turn it off in any procedures that need it.</p><p>\"safe_mode\" returns 1 or 0 to indicate if it is on.</p><p>\"safe_mode 1 password\", turns it on and remembers the password. If it is already on it returns an error if the password is wrong.</p><p>\"safe_mode 0 password\" turns it off if the password matches. If the password is wrong it returns an error.</p><dt>See also</dt><dd><a>exec</a>, <a>load</a>, <a>open</a></dd>"
+    },
+    "push": {
+        "params": [
+            "node"
+        ],
+        "docs": "<p>Add nodes to the top of the node stack. </p><ul><li><em>node</em>...: one or more nodes</li></ul><dt>See also</dt><dd><a>pop</a>, <a>stack</a></dd>"
+    },
+    "node": {
+        "params": [
+            "node"
+        ],
+        "docs": "<ul><li><em>node:</em> a node</li></ul><p>Returns the node's \"internal name\", this name will not change if the node is renamed and is unique to this node. This internal name can be used anywhere a node name is needed, including this function (in which case it returns the name unchanged). The internal name will change each time Nuke is run.</p><dt>See also</dt><dd><a>pop</a>, <a>stack</a>, <a>exists</a></dd>"
+    },
+    "pop": {
+        "params": [
+            "n"
+        ],
+        "docs": "<p>Remove node(s) from the top of the node stack. </p><ul><li><em>n:</em> optional - number of nodes to pop, default 1. Use 0 to not change stack. <dt>Returns</dt><dd>Top item on stack <em>before</em> the pop, or 0 if the stack was empty</dd><dt>See also</dt><dd><a>push</a>, <a>stack</a></dd></li></ul>"
+    },
+    "stack": {
+        "params": [
+            "index"
+        ],
+        "docs": "<p>Return contents of stack. </p><ul><li><em>index:</em> optional - 0 is topmost node, 1 is the next node, etc.</li></ul><p>The stack is used to parse scripts, the top items are used as inputs to the new nodes as they are created, and are popped and then the new node is pushed. It is also used interactively, as each click by the user on a node will push it on the stack (or move it to the top if it is already in the stack).</p><p>If an index is given, this returns the name of the node at that index in the stack, or throws an error if the index is out of range.</p><p>If no index is given, this returns a tcl list of the nodes in the stack.</p><p>This function does not modify the node stack.</p><dt>See also</dt><dd><a>push</a>, <a>pop</a>, <a>dup</a>, <a>index</a>, <a>roll</a>, <a>exch</a>, <a>selected_node</a>, <a>selected_nodes</a></dd>"
+    },
+    "dup": {
+        "docs": "<p>Duplicates the top of the node stack, so the same node is on it twice. Same as \"index 0\". </p><dt>See also</dt><dd><a>index</a>, <a>stack</a></dd>"
+    },
+    "index": {
+        "params": [
+            "n"
+        ],
+        "docs": "<p>Duplicates the n'th entry on the node stack. </p><ul><li><em>n:</em> 0 is topmost node, 1 is the next node, etc. <dt>See also</dt><dd><a>dup</a>, <a>stack</a></dd></li></ul>"
+    },
+    "exch": {
+        "docs": "<p>Swap the top two nodes on the node stack. </p><dt>See also</dt><dd><a>stack</a>, <a>push</a>, <a>pop</a>, <a>roll</a></dd>"
+    },
+    "roll": {
+        "params": [
+            "n",
+            "m"
+        ],
+        "docs": "<p>Rotate items on the stack. </p><ul><li><em>n:</em> number of items to rotate </li><li><em>j:</em> number of items to rotate to the bottom performs a circular shift of the to <em>n</em> nodes on the stack by the amount j. Positive j indicates upward motion on the stack, whereas negative j indicates downward motion.</li></ul><dt>See also</dt><dd><a>stack</a>, <a>push</a>, <a>pop</a>, <a>exch</a></dd>"
+    },
+    "addUserKnob": {
+        "params": [
+            "id name keyword",
+            "data..."
+        ],
+        "docs": "<p>Add a new knob to the user knob tab in a node panel. </p><p>Syntax:<code> addUserKnob ?node node_name? knobID name ?keyword data...? </code></p><ul><li>node <em>node_name:</em> optional: default is the current node </li><li><em>knobID:</em> see below for a list of valid knob ID's </li><li><em>name:</em> optional: this is the tcl name of the new knob </li><li><em>keyword</em><em>data:</em> see below for list of keywords and data</li></ul><p>The following knob ID's are supported:</p><ul><li>0 (OBSOLETE_KNOB): attempts to set this execute a tcl script.</li><li>1 (STRING_KNOB): a little text entry field.</li><li>2 (FILE_KNOB): a single line of text with a filechooser button.</li><li>3 (INT_KNOB): Single integer value.</li><li>4 (ENUMERATION_KNOB): a pulldown selection. This knob returns an integer. <em>user_data</em> can be 'M { list_of_menu_entries }'.</li><li>6 (BOOL_KNOB): check box with label drawn to the right.</li><li>7 (DOUBLE_KNOB): a double precision floating point slider. <em>user_data</em> can be 'R min max' to define the slider range.</li><li>8 (FLOAT_KNOB): a single precision floating point slider. <em>user_data</em> can be 'R min max' to define the slider range.</li><li>12 (XY_KNOB): 2 numbers for x,y position, draws crosshair, proxy scaling.</li><li>13 (XYZ_KNOB): 3 numbers for x,y,z position.</li><li>14 (WH_KNOB): 1 or 2 numbers for width and height, proxy scaling.</li><li>15 (BBOX_KNOB): 4 numbers for x,y,r,t of a rectangle, proxy scaling.</li><li>16 (SIZE_KNOB): 1 number stored as width & height.</li><li>18 (COLOR_KNOB): red, green, blue. <em>user_data</em> can be 'R min max' to define range for all 3 sliders.</li><li>19 (ACOLOR_KNOB): red, green, blue, alpha. <em>user_data</em> can be 'R min max' to define range for all 4 sliders.</li><li>20 (TAB_KNOB): name is put on the tab.</li><li>22 (PYSCRIPT_KNOB): a push button that executes a python script when clicked. <em>user_data</em> can be 'T script'.</li><li>24 (TRANSFORM2D_KNOB): Describes an affine transform. Presents a number of lines of multiple instances of Float_knob, as well as a 2d transform jack in the viewer.</li><li>26 (TEXT_KNOB): static text in the left label column. <em>user_data</em> can be 'T text' to add text in the right knob column.</li><li>29 (AXIS_KNOB): Describes a 3D, 6 degrees of freedom, transformation. Presents a number of lines of multiple instances of Float_knob, as well as a 3d transform jack in the viewer.</li><li>30 (UV_KNOB): Two numbers.</li><li>31 (BOX3_KNOB): Describes a cubic 3D volume using two 3D points. Presents 6 numerical entry boxes, with labels hardcoded to \u00e2\u20ac\u02dcx,\u00e2\u20ac\u2122 \u00e2\u20ac\u02dcy,\u00e2\u20ac\u2122 \u00e2\u20ac\u02dcn,\u00e2\u20ac\u2122 \u00e2\u20ac\u02dcr,\u00e2\u20ac\u2122 \u00e2\u20ac\u02dct\u00e2\u20ac\u2122 and \u00e2\u20ac\u02dcf\u00e2\u20ac\u2122.</li><li>32 (SCRIPT_KNOB): a push button that executes a tcl script when clicked. <em>user_data</em> can be 'T script'.</li><li>35 (PULLDOWN_KNOB): a pulldown menu, which upon selection executes TCL scripts. No data storage. <em>user_data</em> can be 'M { list_of_menu_command_pairs }'.</li><li>39 (KEYER_KNOB): Presents a trapezoid graph shape, with corners defined by the data values.</li><li>40 (COLORCHIP_KNOB): Presents a button which pops up the NUKE color wheel when clicked.</li><li>44 (ONEVIEW_KNOB): Presents a single select drop down list of the current views present in the script.</li><li>45 (MULTIVIEW_KNOB): Presents a multi select drop down list of the current views present in the script.</li><li>47 (PYPULLDOWN_KNOB): a pulldown menu, which upon selection executes python scripts. No data storage. <em>user_data</em> can be 'M { list_of_menu_command_pairs }'.</li><li>50 (VIEWPAIR_KNOB): Presents a pair of single select drop down lists of the current views within the script, and represent a relationship between two views.</li><li>53 (METADATA_KNOB): Presents a read only list of all the metadata found on the incoming data stream.</li><li>54 (PIXELASPECT_KNOB): Same as a Float_knob in double only variety, which proxy scales to take into account differing aspect ratios between formats.</li><li>68 (CASCADING_ENUMERATION_KNOB): an ENUMERATION_KNOB adding cascading menus.</li><li>71 (POSITIONVECTOR_KNOB): Presents six numerical entry boxes in two lines, labelled \u00e2\u20ac\u02dcfrom\u00e2\u20ac\u2122 and \u00e2\u20ac\u02dcto,\u00e2\u20ac\u2122 each with three boxes with labels \u00e2\u20ac\u02dcx,\u00e2\u20ac\u2122 \u00e2\u20ac\u02dcy\u00e2\u20ac\u2122 and \u00e2\u20ac\u02dcz.\u00e2\u20ac\u2122 Additionally presents two 3d positions joined by arrow widget in 3d viewer.</li></ul><p>The following keywords+data are supported, only the first letter is checked:</p><ul><li>label \"text\" : If no label is specified, Nuke will use the name as the label. If the label is \"INVISIBLE\", the knob will not be visisble in the UI.</li><li>tooltip \"text\" : Text for popup tooltip</li><li>Range min max : range for floating-point slider</li><li>Menu {list} : for Enumeration knob</li><li>Text \"text\" : for Text and script knob</li></ul><dt>See also</dt><dd><a>knob</a>, <a>knobs</a></dd>"
+    },
+    "knob_default": {
+        "params": [
+            "class .",
+            "knob",
+            "value"
+        ],
+        "docs": "<p>Get or set the default value of a knob for a class of nodes. </p><ul><li><em>class:</em> describes the class of nodes, i.e Blur </li><li><em>knob:</em> the name of a knob in <em>class</em></li><li><em>value:</em> optional - default value for new nodes</li></ul><p>Knob_default sets a default value for knobs in nodes that belong to the same class. All knobs with matching names, that are created after this command was issued, will default to the new value. If class. is missing or is \"*.\" then this default applies to all nodes with such a knob. If several values are supplied, the first value which is valid will be used as the default.</p><dt>See also</dt><dd><a>knob</a>, <a>knob_defaults</a></dd>"
+    },
+    "knob_defaults": {
+        "docs": "<p>Returns a list of all defined knob_defaults. To find the value of one use [knob_default <em>name</em> ]. </p><dt>See also</dt><dd><a>knob_default</a></dd>"
+    },
+    "end_group": {
+        "docs": "<p>Changes the current group to the parent of the current group. </p><p>Does nothing if the current group is a Root (the main window of a script). </p><dt>See also</dt><dd>group </dd>"
+    },
+    "Root": {
+        "params": [
+            "knob",
+            "value"
+        ],
+        "docs": "<p>Set knob value in the root node. </p><p>tcl syntax: <code>\u00a0Root { knob value ... }</code></p><ul><li>set this <em>knob</em></li><li>to a new <em>value</em></li></ul><p>knob-value pairs can be repeated as often as needed. </p><dt>See also</dt><dd><a>knob</a>, <a>node</a></dd>"
+    },
+    "expression": {
+        "params": [
+            "expr"
+        ],
+        "docs": "<p>Parse a Nuke expression. </p><ul><li><em>expression</em></li></ul><p>This command runs the same expression parser as is used by Animations. This is not the same as the tcl expr parser. The main differences are:</p><ol><li>Only floating point numbers are calculated. There are no strings, boolean, or integer values.</li><li>You can name any knob that returns a floating point value, with a dot-separated name, see knob for details on these names. You may follow the knob name with a time in parenthesis (like a function call) and if it is animated it will be evaluated at that time. If it is animated and no time is given, \"frame\" is used.</li><li>The words \"frame\", \"t\", and \"x\" evaluate to the frame number of the context node, or the frame number this animation is being evaluated at.</li><li>The word 'y' in an animation expression evaluates to the value the animation would have if the control points were used and there was no expression. Outside an animation expression y returns zero.</li><li>You can put in several expressions, separated by spaces, and it will return several numbers separated by spaces. <dt>See also</dt><dd><a>knob</a>, <a>value</a>, <a>setkey</a></dd></li></ol>"
+    },
+    "questionmark": {
+        "params": [
+            "expression",
+            "true_result",
+            "false_result"
+        ],
+        "docs": "<p>Actual name is \"?\", return 1 of two strings. </p><ul><li>expression: expression to evaluate </li><li>true_result: returned if expression is non-zero </li><li>false_result: returned if expression is zero</li></ul><p>This command is most useful for imbedding in square brackets into a string value to allow a choice between two strings based on the values of other knobs. Ie \"[? root.proxy proxy_string fullsize_string]\" </p>"
+    },
+    "in": {
+        "params": [
+            "object",
+            "command"
+        ],
+        "docs": "<p>Execute commands with a given node/knob/field as the \"context\". </p><ul><li>object: node, knob, or field in knob </li><li>command: commands to execute, use curly braces for multiple</li></ul><p>The <em>command</em> is executed with the <em>object</em> as the \"context\". This means that all names are evaluated relative to this object, and commands that modify \"this\" node will modify the given one.</p><p>If no arguments are given, this returns the name of the current context. Warning: this name may not give the exact same context if your nodes do not all have unique names.</p><dt>See also</dt><dd>this </dd>"
+    },
+    "value": {
+        "params": [
+            "knob",
+            "default_value"
+        ],
+        "docs": "<p>The value tcl command returns the current value of a knob. </p><p>Returns the current value of a knob. Unlike <a>knob()</a>, this will evaluate animation at the current frame, and expand brackets and dollar signs in string knobs.</p><p>The optional default_value is returned if there is any error, such as that named knob not existing. This avoids the need for catch statments when producing status messages, it is faster to do this.</p><p>If you want to use the result in a math expression, you may want to use <a>numvalue()</a> instead. That will always return a number instead of text.</p><dt>See also</dt><dd><a>numvalue</a>, <a>knob</a>, <a>expression</a>, <a>exists</a></dd>"
+    },
+    "numvalue": {
+        "params": [
+            "knob",
+            "default_value"
+        ],
+        "docs": "<p>The value tcl command returns the current value of a knob. </p><p>This is the same as the <a>value()</a> command except it will always return a number. For enumerations this returns the index into the menu, starting at zero. For checkmarks this returns 0 for false and 1 for true. For all other knobs it attempts to atoi() the string, returning 0 on failure.</p><p>The optional default_value is returned if there is any error, such as the named knob not existing. This avoids the need for catch statments when producing status messages, it is faster to do this.</p><dt>See also</dt><dd><a>value</a>, <a>knob</a>, <a>expression</a>, <a>exists</a></dd>"
+    },
+    "exists": {
+        "params": [
+            "knob"
+        ],
+        "docs": "<p>True if the named item exists. </p><p>Returns true if the named knob or node exists. Returns false if it does not (including all syntax errors). This allows you to write more readable code than doing catch commands.</p><dt>See also</dt><dd><a>knob</a>, <a>value</a>, <a>expression</a></dd>"
+    },
+    "knob": {
+        "params": [
+            "knob",
+            "new_value"
+        ],
+        "docs": "<p>Returns or sets the entire state of a knob. </p><ul><li><em>-t:</em> obtain the type of the knob (as an int), rather than set/get </li><li><em>-c:</em> obtain the type of the knob as a string </li><li><em>knob:</em> name of knob to query or set </li><li><em>value:</em> optional - if given, this will set the knob</li></ul><p>Each individual control on a control panel is called a \"knob\". A knob's name is a dot-separated list. An example of a fully-expanded name of a knob is \"root.Group1.Blur1.size.w\". \"root\" is the node name of the outermost group, \"Group1\" is a group inside that containing the blur operator, \"Blur1\" is the name of a blur operator, \"size\" is the name of the actual knob, and \"w\" is the name of the \"field\" (there are two fields in a blur size, \"w\" and \"h\").</p><p>You can omit a lot of this because all knob names are figured out relative to a \"current knob\" and \"current node\". These are set depending on the context of where the scripting is invoked. For menu items the current node is the group that contained the menu, and there is no current knob. For expressions typed into knob fields the current knob is that knob and the current node is the node the knob belongs to.</p><p>If a name does not start with \"root\" then a search upwards is done for the first word in the name, first against the fields in the current knob, then against the knobs in the current node, then against the nodes in the group containing the current node (or in it if it is a group), on up to the root.</p><p>The word \"this\" means the current knob or the current node.</p><p>The word \"input\" means the first (0 or B) input of a node. Ie \"Blur1.input\" returns the node connected to the input of Blur1, while \"Blur1.input.input\" returns the input of that node.</p><p>If you are getting the value for reporting to the user, you probably want to use the value or expression commands.</p><p>If the -t argument is specified, it will print out the type of the knob rathe than getting or setting the value. The type is an integer, using the same list as addUserKnob</p><p>If -c it will print out the type of the knob as a string, e.g. \"Int_Knob\", \"Enumeration_Knob\", \"XY_Knob\".</p><dt>See also</dt><dd><a>value</a>, <a>expression</a>, <a>setkey</a>, <a>knob_default</a>, <a>addUserKnob</a></dd>"
+    },
+    "setkey": {
+        "params": [
+            "knob",
+            "time",
+            "value"
+        ],
+        "docs": "<p>Set a value at a keyframe for a knob. </p><ul><li><em>knob</em> names a single numerical field in some operator </li><li><em>time</em> of keyframe </li><li><em>value</em> for new keyframe</li></ul><p>This turns on the animated control for that field (if not already on) and adds a single keyframe at the given time and value. See knob for how to name knobs and fields.</p><p>If you don't want to turn on animation, use the knob command instead. </p><dt>See also</dt><dd><a>knob</a></dd>"
+    },
+    "knobs": {
+        "params": [
+            "-awdv",
+            "node",
+            "?",
+            "values",
+            "?"
+        ],
+        "docs": "<p>Get or set a list of knobs for a node. </p><ul><li><em>-a:</em> list all knobs </li><li><em>-d:</em> list only knobs with non-default settings </li><li><em>-v:</em> add setting after each knob </li><li><em>-w:</em> write addUserKnob commands </li><li><em>node:</em> node to use </li><li><em>name-value-list</em>: optional list to set knobs</li></ul><p>If only a node is named, this outputs a list of the names of all the knobs in this node. The switches control exactly what is in the list:</p><ul><li>-a makes it list all possible knobs. normally user interface things like the name and the tile's x and y position are hidden.</li><li>-d will skip knobs that appear to be set to their default values.</li><li>-v Alternate the knob names with their current setting. The setting is identical to what the <a>knob()</a> command returns.</li><li>-w will add to the -v list commands that will create any missing user knobs on the target node if the resulting list is passed to the knobs command.</li></ul><p>The optional second argument is an alternating name + setting list as output by this command with -v, it then sets the knobs to the given settings.</p><dt>See also</dt><dd><a>knob</a>, <a>values</a></dd>"
+    },
+    "values": {
+        "params": [
+            "-ad",
+            "node"
+        ],
+        "docs": "<p>Get a list of the current values for all knobs in a node. </p><ul><li><em>-a:</em> list all knobs </li><li><em>-d:</em> list only knobs with non-default settings </li><li><em>node:</em> node to use</li></ul><p>Returns an alternating list of knob names and the current <a>value()</a> of the knob. This is different than the <a>knobs()</a> command in that <a>knobs()</a> returns the expressions and curves, while values returns the evaluation of the expressions.</p><dt>See also</dt><dd><a>knobs</a></dd>"
+    },
+    "nodes": {
+        "params": [
+            "group"
+        ],
+        "docs": "<p>Return a tcl list of all the child nodes of the group. </p><ul><li><em>group:</em> optional</li></ul><p>If the group name is ommitted the current group (ie the group the user picked a menu item from the menubar of).</p><p>The returned list contains internal hexadecimal names, which are guaranteed to be unique for every node in the script. To get user-friendly names you should use \"[knob $n.name]\" where \"$n\" is each word returned by this command.</p><dt>See also</dt><dd><a>node</a>, <a>knobs</a></dd>"
+    },
+    "clone": {
+        "params": [
+            "node",
+            "type",
+            "args"
+        ],
+        "docs": "<p>Create a clone node that behaves identical to the original. </p><ul><li><em>node:</em> original node </li><li><em>type:</em> optional class of the original node </li><li><em>args:</em> optional list of name+value pairs for all the knobs</li></ul><p>A cloned node shares the exact same properties with its original. Clones share the same set of knobs and the same control panel. However they can have different positions and connections in the render tree. Any clone, including the original, can be deleted at any time without harming any of its clones.</p><p>This command will attempt to create a clone of the given node. This will fail if the original node does not exist or does not have the type specified. If it fails and a type is given, that type and args are used to create a normal node.</p><dt>See also</dt><dd><a>node</a>, <a>clone_selected</a></dd>"
+    },
+    "clone_selected": {
+        "params": [
+            "action"
+        ],
+        "docs": "<p>Command to execute for the Clone menu item. </p><ul><li><em>action:</em> optional action, if \"copy\" it cuts the resulting clones to the clipboard.</li></ul><p>This makes a clone of all selected nodes, preserving connections between them, and makes only the clones be selected.</p><dt>See also</dt><dd><a>clone</a></dd>"
+    },
+    "declone": {
+        "params": [
+            "node"
+        ],
+        "docs": "<p>Make the node not be a clone. </p><p>nyi, the Node::declone method needs to be fixed! </p>"
+    },
+    "show_info": {
+        "params": [
+            "node..."
+        ],
+        "docs": "<p>Returns a long string of debugging information about each node and the operators it is currently managing. You should not rely on it's contents or format being the same in different versions of Nuke.</p><dt>See also</dt><dd><a>node</a>, <a>nodes</a>, show, <a>display</a></dd>"
+    },
+    "display": {
+        "params": [
+            "command",
+            "nodecontext"
+        ],
+        "docs": "<p>Creates a dialog box showing the result of command. </p><p>Creates a window showing the result of command. The command is executed in the \"context\" of the given node, so this and a knob name in expressions refer to that node. In the window is an \"update\" button which causes the command to be run again.</p><ul><li><em>-w</em> width: set the width of the window in pixels</li></ul><ul><li><em>-t</em> title: set the title of the window</li></ul><ul><li><em>command:</em> the text returned by this TCL command will be shown in the box </li><li><em>node:</em> if this node is changed, the dialog box will automatically update</li></ul><p>Example: </p><div><div><a>display</a> {<span>return</span><span>\"The color is [knob color]\"</span>} [<a>selected_node</a>] "
+    },
+    "show_dag": {
+        "params": [
+            "groupnode"
+        ],
+        "docs": "<p>Show the tree view of one or more group nodes. </p><ul><li>one or more <em>groupnodes</em></li></ul><dt>See also</dt><dd><a>node</a>, <a>nodes</a>, <a>show_info</a>, <a>show_dag</a>, <a>show_settings</a></dd>"
+    },
+    "zoom": {
+        "params": [
+            "group scale center_x",
+            "center_y"
+        ],
+        "docs": "<p>Change the zoom and pan of a group's display. </p><ul><li><em>group:</em> optional group </li><li><em>scale:</em> new zoom factor </li><li><em>center_x:</em> optional center </li><li><em>center_y:</em> optional center</li></ul><p>If the group name is ommitted the current group (ie the group the user picked a menu item from the menubar of).</p><p>If no other arguments are given this returns the current zoom factor.</p><p>If one argument is given, zoom is set to that factor, and the image is positioned so the mouse is pointing at the same point. A zero or negative value will perform a zoom-to-fit.</p><p>If two more arguments are given the image is zoomed and then centered on that pont You probably want to use something like \"zoom 1 $node.xpos $node.ypos\" to show a particular node. </p>"
+    },
+    "connect_viewer": {
+        "params": [
+            "n",
+            "node"
+        ],
+        "docs": "<p>Connect a viewer input to a node. </p><ul><li><em>n:</em> input number </li><li><em>node:</em> Node to connect, or 0</li></ul><p>Some viewer in the current group is found, if there are no viewers one is created. The viewer is then altered to have at least n+1 inputs and then input n is connected to the given node.</p><p>This command is used by the numeric shortcuts in the DAG view menu. </p>"
+    },
+    "autoplace": {
+        "params": [
+            "nodelist"
+        ],
+        "docs": "<p>Automatically place nodes, so they do not overlap. </p><ul><li><em>node</em> or <em>nodelist</em></li></ul><dt>See also</dt><dd><a>nodes</a>, <a>autoplace_snap</a></dd>"
+    },
+    "autoplace_snap": {
+        "params": [
+            "nodelist"
+        ],
+        "docs": "<p>Move one or more nodes to the closest grid position. </p><ul><li><em>node</em> or <em>nodelist</em></li></ul><dt>See also</dt><dd><a>knobs</a></dd>"
+    },
+    "input": {
+        "params": [
+            "node",
+            "number",
+            "input_node"
+        ],
+        "docs": "<p>Return or set an input of a node. </p><ul><li><em>node:</em> this is the node on the pointy side of the arrow </li><li><em>number:</em> input number starting with 0 (0=B, 1=A) </li><li><em>input_node:</em> optional - connect the input to this node</li></ul><p>Attempts to make illegal connections (loops, between groups, wrong type of node) will produce an error. </p><dt>See also</dt><dd><a>inputs</a>, <a>node</a></dd>"
+    },
+    "inputs": {
+        "params": [
+            "node",
+            "new_number"
+        ],
+        "docs": "<ul><li><em>node</em></li><li><em>new_number:</em> number of inputs requested</li></ul><p>Get how many inputs the node has. Normally this is a constant but some nodes have a variable number, the user can keep connecting them and the count will increase.</p><p>Attempting to set the number will just disconnect all inputs greater or equal to <em>new_number</em>. For a variable input node this may decrease inputs to the new value. For most nodes this will have no effect on the value of inputs.</p><dt>See also</dt><dd><a>input</a>, <a>node</a></dd>"
+    },
+    "selected_node": {
+        "docs": "<p>Returns the \"node the user is thinking about\". </p><p>If several nodes are selected, this returns one of them. The one returned will be an \"output\" node in that no other selected nodes use that node as an input. If you are interested in exactly what order the user clicked on nodes use the <a>stack()</a> command. [selected_node] is usually the same as [stack 0] but not always!</p><p>If no nodes are selected, then if the last thing typed was a hotkey this returns the node the cursor is pointing at. If none, or the last event was not a hotkey, this produces a \"No node selected\" error. Most GUI commands that want to work on a node should use this to find the node.</p><dt>See also</dt><dd><a>selected_nodes</a>, <a>stack</a></dd>"
+    },
+    "selected_nodes": {
+        "docs": "<p>List all the selected nodes Returns a tcl list of the names of all selected nodes in the current group. An attempt is made to return them in \"useful\" order where inputs are done before the final node, so commands applied to this list go from top-down. Produces an error if there are no selected nodes. </p><dt>See also</dt><dd><a>selected_node</a>, <a>stack</a></dd>"
+    },
+    "dependencies": {
+        "params": [
+            "nodelist"
+        ],
+        "docs": "<p>List all nodes referred to by these nodes. Return all nodes that the listed nodes read information from, that are not themselves in the list. You can use switches to select what types of referral are looked for: </p><ul><li>-e = expressions</li><li>-i = visible input pipes</li><li>-h = hidden input pipes. The default is to look for all types of connections.</li></ul><dt>See also</dt><dd><a>dependent_nodes</a></dd>"
+    },
+    "dependent_nodes": {
+        "params": [
+            "nodelist"
+        ],
+        "docs": "<p>List all nodes that refer to these nodes Return all nodes that read information from any nodes in the list, that are not themselves in the list. You can use switches to select what types of referral are looked for: </p><ul><li>-e = expressions</li><li>-i = visible input pipes</li><li>-h = hidden input pipes. The default is to look for all types of connections.</li></ul><dt>See also</dt><dd><a>dependencies</a></dd>"
+    },
+    "frame": {
+        "params": [
+            "value"
+        ],
+        "docs": "<p>Return or set the current frame number. </p><p>Returns the current frame. Normally this is the frame number set in the root node, typically by the user moving the frame slider in a viewer.</p><p>The returned value actually depends on the \"context\". If you have a timewarp, doing \"in TimeWarp1.input {frame}\" will give you a different number. If you put \"[frame]\" into a function curve, then the expression \"knobname(10)\" will return 10, as frame will evaluate to the number passed to the expression. Unlocked viewers have local frame numbers, too.</p><p>If a number is given, it sets the current frame number to that number. If the current context is the root this changes the root frame. </p>"
+    },
+    "make_timecode": {
+        "params": [
+            "startcode",
+            ",",
+            "fps",
+            ",",
+            "startframe"
+        ],
+        "docs": "<p>Returns a timecode string in the format HH:MM:SS:FF. </p><ul><li><em>startcode</em> The start of the time code. Must be in the format of either HH:MM:SS:FF or HH;MM;SS;FF (for drop frames). Drop frames are assumed when the ; is used to delimit the time code, if the frame rate is 29.97 or 59.94. </li><li><em>fps</em> The frame rate to use to generate the time codes per frame of output. To write the time codes in drop frame format, the start code must have semi-colons (;) in it, and the frame rate must be one of the frame rates that support drop frames (29.97 or 59.94). </li><li><em>startframe</em> The start frame </li></ul>"
+    },
+    "x": {
+        "docs": "<p>Return the current x value in Color/Math/Expression. This lets you embed tcl in square brackets into the expressions and have it produce a different value for each pixel.</p><p>Warning: calling tcl from inside Expression is really slow! </p><dt>See also</dt><dd><a>frame</a><a>y</a> Expression</dd><p>Return the current y value in Color/Math/Expression. This lets you embed tcl in square brackets into the expressions and have it produce a different value for each pixel.</p><p>Warning: calling tcl from inside Expression is really slow! </p><dt>See also</dt><dd><a>frame</a><a>x</a> Expression</dd><p>Return the current frame number. </p><dt>See also</dt><dd><a>frame</a>, <a>t</a></dd>"
+    },
+    "delete": {
+        "params": [
+            "nodelist"
+        ],
+        "docs": "<p>Delete nodes. </p><ul><li><em>node</em> or <em>nodelist</em></li></ul><p>The named node(s) are deleted. They can be recovered with an undo. </p>"
+    },
+    "argv": {
+        "params": [
+            "index"
+        ],
+        "docs": "<p>Returns command line arguments. </p><ul><li><em>index</em> into command line parameters</li></ul><p>Returns a string argument given on the command line when Nuke was invoked. The first word after the script name is <code>[argv 0]</code>, the second is <code>[argv 1]</code>, etc.</p><p>You can put <code>[argv 0]</code> into a filename or other string so that the filenames are specified on the command line. If you put this in a file writer, be sure to set the \"file type\" back to blank if you want the user to be able to specify the file type by the extension of the filename. You can also use this command as part of a filename, for instance the reader can use \"[argv 0]\" and the writer can use \"[file\nrootname [argv 0]].jpeg\" to force the output to be the same name as the input but with a \".jpeg\" extension.</p><p>You can also put <code>[argv n]</code> into math expressions. The argument must then be a number (unfortunately it cannot be an expression). An annoyance is that if the -F flag specifying a frame range is not given, Nuke treats all trailing arguments that consist of only digits, dash, comma, or slash as frame ranges for backwards compatibility with older versions and strips them off before argv gets a chance to look at them. The only way around this is to use -F to specify a frame range, design your command so that the last argument is not a number, or require your users to put a decimal point into the number so that it doesn't make sense as an old style frame range. Using -F to specify framerange is recommended.</p><p>You can run the script with \"nuke -x \\a scriptname \\a argv0 \\a argv1\n\\a frames\" If no frames are given it will run the range given on the root settngs (to make the script more useful, change this range to 1,1 so that the default behavior is to do one frame). Unix users can make the script look like a program by turning on the executable bit, and perhaps editing the shebang (#!) line at the start of the file. Windows users can use a batch file for the same effect.</p><p>If the argument is missing it produces an error and the script will fail. This will happen even if the node is disabled or not used due to a switch, so to allow variable argument lists, a negative index does not fail but instead returns the string \"0\". This allows you to put in expressions for the index to avoid failures. For instance \"[argv [argc]-1]\" will give you the last argument, and you can use \"[argc]\" in switch expressions so that the script works.</p><dt>See also</dt><dd><a>argc</a></dd>"
+    },
+    "argc": {
+        "docs": "<p>Returns number of command line arguments. </p><p>Returns how many extra words were put on the command line between the script name and any frame ranges. These can be read with the <a>argv()</a> command.</p><dt>See also</dt><dd><a>argv</a></dd>"
+    },
+    "filename_list": {
+        "docs": "<p>List all files in a directory the Nuke way. </p><p>Returns a list of all files in a directory, but with \"sequences\" of names with sequential numbers in them reduced to the form that is used as filenames by file readers: \"foo.%04d.rgb 1-10\" </p>"
+    },
+    "recent_file": {
+        "params": [
+            "index"
+        ],
+        "docs": "<p>Return a filename from the recent-files list. </p><p>Returns a proper reader class for a given sequence. The returned reader can be \"Read\", \"DeepRead\" or \"ReadGeo\". Basically it relies on the sequence extension, but in case of \".exr\" it looks inside the file to check if contains deep data.</p><ul><li><em>index</em> into the list, 1 = most recent Returns a filename, or returns an error if the index is greater than the length of the list. <dt>See also</dt><dd><a>add_recent_file</a></dd></li></ul>"
+    },
+    "add_recent_file": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Add a file to the recent-files list. </p><ul><li><em>filename</em> name to add Acts as though you just visited the given file. It is added or moved to index 1 in the recent_file list. This is done automatically by Nuke when you open or save any file in gui mode. <dt>See also</dt><dd><a>recent_file</a></dd></li></ul>"
+    },
+    "load": {
+        "params": [
+            "plugins..."
+        ],
+        "docs": "<p>Load a plugin. </p><ul><li><em>plugin</em> name or filename</li></ul><dt>Returns</dt><dd>full filename and path of the plugin found</dd><p>You can force a certain plugin to load with this command. If the plugin has already been loaded nothing happens.</p><p>If there is no slash in the name then the <a>plugin_path()</a> is searched for it. If there is a slash then the name is used directly as a filename, if it does not start with a slash the name is relative to the directory containing any plugin being currently loaded.</p><p>If no filename extension is provided, it will try appending \".so\" (or whatever is appropriate for your OS) and then by trying to append \".tcl\".</p><p>This command can also be used to make one plugin load another. This is useful if you have a plugin that defines more than one command. If a plugin defines the commands A and B you can name it \"A.so\" and then make \"B.tcl\" that says \"load ./A\".</p><p>On Linux the tcl command for loading tcl plugins has been renamed \"tcl_load\" so you can call it.</p><dt>See also</dt><dd>unload, <a>plugins</a></dd>"
+    },
+    "plugins": {
+        "params": [
+            "switches",
+            "pattern..."
+        ],
+        "docs": "<p>Returns a list of plugins. </p><p>Returns a list of every loaded plugin, or every plugin available. By default each plugin is returned as the full pathname of the plugin file.</p><p>You can give a glob-style matching pattern and only the plugins whose filenames (not path) match a glob pattern will be returned. You can give more than one glob pattern. If you want all the binary plugins you should use \"all_plugins *.$plugin_ext\".</p><p>You can put switches before the glob patterns. Currently supported:</p><p>-all = Return all plugins in each of the <a>plugin_path()</a> directories, rather than only the currently loaded plugins.</p><p>-nodir = Just put the filenames in the list, not the full path. There may be duplicates.</p><p>\u2013 = Stop looking for switches, allows a glob pattern to start with dash.</p><dt>See also</dt><dd><a>load</a>, <a>plugin_path</a></dd>"
+    },
+    "plugin_name": {
+        "docs": "<p>Returns the name of the plugin being currently loaded. </p><p>You can use this to generate filenames that are relative to the directory the plugin is in.</p><dt>See also</dt><dd><a>load</a>, unload, <a>plugins</a></dd>"
+    },
+    "plugin_exists_tcl": {
+        "docs": "<p>Test for the existence of a plugin. </p><ul><li><em>plugin</em> name or filename</li></ul><dt>Returns</dt><dd>1 if found, or 0 if not</dd><p>This command tells you if a plugin with the given name exists in the plugin path.</p><p>If there is no slash in the name then the <a>plugin_path()</a> is searched for it. If there is a slash then the name is used directly as a filename, if it does not start with a slash the name is relative to the directory containing any plugin being currently loaded.</p><p>If no filename extension is provided, it will try appending \".linuxfc4_intel\" (or whatever your system is) and then by trying to append \".tcl\".</p><dt>See also</dt><dd>unload, <a>plugins</a></dd>"
+    },
+    "quit": {
+        "docs": "<p>Exit Nuke. </p><p>If there were changes to the current script, Nuke will ask the user to save the changes, exit or cancel. </p><dt>See also</dt><dd><a>Root</a>, <a>modified</a>, <a>exit</a></dd>"
+    },
+    "bytes": {
+        "params": [
+            "amount"
+        ],
+        "docs": "<p>Convert large memory amounts into human readable format. </p><ul><li><em>amount</em> of bytes</li></ul><p>If <em>amount</em> is 1024 or greater, <em>bytes</em> will divide it by 1024 and append the letter <em>k</em>. It will append M and G for Megabyte and Gigabyte quantities respectively. </p>"
+    },
+    "plugin_path": {
+        "docs": "<p>Returns a list of all the directories Nuke will search for plugins in.</p><p>The built-in default is ~/.nuke and the \"plugins\" directory from the same location the Nuke executable file is in. Setting the environment variable $NUKE_PATH to a colon-separated list of directories will insert those directories between them. You can further modify the plugin_path with plugin_addpath and plugin_appendpath, and often the init.tcl files in these directories will do so.</p><dt>See also</dt><dd><a>plugin_addpath</a>, <a>plugin_appendpath</a>, <a>ofx_plugin_path</a></dd>"
+    },
+    "ofx_plugin_path": {
+        "docs": "<p>Returns a list of all the directories Nuke searched for OFX plugins in.</p><dt>See also</dt><dd><a>plugin_path</a></dd>"
+    },
+    "plugin_addpath": {
+        "params": [
+            "path"
+        ],
+        "docs": "<ul><li><em>path(s)</em></li></ul><p>Adds all the paths to the beginning of the Nuke plugin path. If the path already exists in the list of plugin paths, it is moved to the start. If this command is executed inside an init.tcl then the init.tcl in the path will be executed.</p><dt>See also</dt><dd><a>plugins</a>, <a>plugin_path</a>, <a>plugin_appendpath</a></dd>"
+    },
+    "plugin_appendpath": {
+        "params": [
+            "path"
+        ],
+        "docs": "<ul><li><em>path(s)</em></li></ul><p>Add a filepath to the end of the Nuke plugin path. If the path already exists in the list of plugin paths, it will remain at its current position. The init.tcl is <em>not</em> executed in this.</p><dt>See also</dt><dd><a>plugins</a>, <a>plugin_path</a>, <a>plugin_addpath</a></dd>"
+    },
+    "execute": {
+        "params": [
+            "nodes",
+            "rangelist"
+        ],
+        "docs": "<p>Execute the current script for a specified frame range. </p><ul><li><em></em>?nodes?: any number of nodes to execute </li><li><em>rangelist:</em> list of frame numbers to execute. Also 1-10 or 1,10 will be equal to all frames from 1 to 10, 1-10/2 or 1,10,2 will be a list of every other frame in that range. <dt>Returns</dt><dd>error if interrurpted by Ctrl-C or hitting cancel</dd>\nExecute the named nodes, which must all be Write or other executable operators. If no nodes are given then all executable nodes in the current group are executed. The ranges indicate what frames to run, they can be a single number, or \"A,B\" to do all frames between A and B inclusive, or \"A,B,C\" to do each C'th frame from A to the last one before or equal to B.</li></ul><p>If Nuke is run with the GUI up, this will pop up a progress meter. If the user hits the cancel button this command will return a \"cancelled\" error.</p><p>If Nuke is run as a text command (with the -t switch) this prints a text percentage as it progresses. If the user types ^C (on Unix) it will return to the prompt, aborting all commands.</p><dt>See also</dt><dd><a>frames</a><a>argv</a><a>argc</a></dd>"
+    },
+    "frames": {
+        "params": [
+            "type"
+        ],
+        "docs": "<p>Return list of frames supplied on the command line to nuke. </p><ul><li><em>type:</em> first, last, all, ranges</li></ul><p>All trailing command-line arguments that start with a number are parsed as \"frame ranges\" by Nuke. This will return these arguments. If none are given this acts as though root.first_frame,root.last_frame were given as the frame range.</p><p>[frames first] returns the lowest number.</p><p>[frames last] returns the highest number.</p><p>[frames all] returns a list of all frame numbers, expanding the ranges into individual numbers.</p><p>[frames ranges] returns frame ranges in a form that can be passed to execute. If no command line ranges were given this returns an empty list, not the root frame range.</p><p>[frames when expression] returns frame ranges when expression is non-zero.</p><p>[frames when expression every n] returns every nth frame where expression is non-zero.</p><dt>See also</dt><dd><a>execute</a><a>argv</a><a>argc</a></dd>"
+    },
+    "filename": {
+        "params": [
+            "group"
+        ],
+        "docs": "<p>Return the filename(s) this node or group is working with. </p><ul><li>-v will replace %%04d style sequences with the current frame number </li><li><em>node</em>, if not given the current node is used</li></ul><p>For a Read or Write operator (or anything else with a filename knob) this will return the current filename, based on the root.proxy settings and which of the fullsize/proxy filenames are filled in. All tcl expansion of commands and variables is done. However by default it will still have %%04d sequences in it, use -v to get the actual filename with the current frame number.</p><p>If the node is a group, a search is done for executable (i.e. Write) operators and the value from each of them is returned. This will duplicate the result of calling <a>execute()</a> on the group.</p><p>If no filenames are found, an empty string is returned.</p><dt>See also</dt><dd><a>nodes</a>, <a>execute</a></dd>"
+    },
+    "add_format": {
+        "params": [
+            "w h",
+            "x",
+            "y",
+            "r",
+            "t",
+            "pa",
+            "name"
+        ],
+        "docs": "<p>Add a new image format to the Nuke script. </p><p>tcl syntax: <code><b>add_format</b> { w h ?x y r t? ?pa? name}</code></p><ul><li><em>w, h</em>: required - width in pixel </li><li><em>x, y, r, t</em>: optional - image area, if smaller than 0, 0, <em>w</em>, <em>h</em></li><li><em>pa:</em> optional - pixel aspect ratio </li><li><em>name:</em> required - format name</li></ul><p>Create a new image format, which will show up on the pull-down menus for image formats. You must give a width and height and name. The xyrt rectangle describes the image area, if it is smaller than the width and height (for Acadamy aperature, for example). The pixel aspect is the ratio of the width of a pixel to the height. </p><dt>See also</dt><dd><a>formats</a></dd>"
+    },
+    "formats": {
+        "docs": "<p>Return all available formats in a script. </p><p>Formats are returned as a tcl list. Each format contains8 elements: <code>{ width height xorigin yorigin right top aspect name }</code></p><dt>See also</dt><dd><a>add_format</a></dd>"
+    },
+    "add_channel": {
+        "params": [
+            "name"
+        ],
+        "docs": "<p>Add a named new channel to the Nuke script. </p><ul><li><em>name:</em> name of new channel</li></ul><p>If a channel with this name already exists, nothing changes. </p><dt>See also</dt><dd><a>add_layer</a>, <a>layers</a>, <a>channels</a></dd>"
+    },
+    "add_layer": {
+        "params": [
+            "layer",
+            "channel..."
+        ],
+        "docs": "<p>Add a new layer and channels to Nuke. </p><p>tcl syntax: <code><b>add_layer</b> { name channel ... }</code></p><ul><li><em>name:</em> new layer name </li><li><em>channel</em>...: up to eight channel names for the new layer</li></ul><p>The full name of a Nuke channel consistes of the layer name, a dot, and one of the layer's channel names. </p><dt>See also</dt><dd><a>add_channel</a>, <a>layers</a></dd>"
+    },
+    "layers": {
+        "docs": "<p>List layers. </p><dt>See also</dt><dd><a>add_channel</a>, <a>add_layer</a>, <a>channels</a></dd>"
+    },
+    "channels": {
+        "params": [
+            "node"
+        ],
+        "docs": "<p>List channels. </p><ul><li><em>node:</em> optional node, if given only the channels output by this node are listed. If not given, all channels known about are listed.</li></ul><dt>See also</dt><dd><a>layers</a>, <a>add_channel</a>, <a>add_layer</a></dd>"
+    },
+    "sample": {
+        "params": [
+            "node",
+            "channel",
+            "x",
+            "y",
+            "dx",
+            "dy"
+        ],
+        "docs": "<p>Return pixel values from an image. </p><p>Lets your tcl code look at pixel values. Notice that doing this requires the image to be calculated, so performance may be very bad if this is placed into an expression in a control panel.</p><p>The <em>channel</em> can be the name of a channel or an integer (starting at 1 for red).</p><p>x,y is the center of the area to sample. Note that integers are at the corners of pixels, to center on a pixel add .5 to both coordinates.</p><p>If the optional dx,dy are not given then the exact value of the square pixel that x,y lands in is returned. This is also called \"impulse filtering\".</p><p>dx and dy are the size of the area to sample, centered on x,y. This produces a cubic filtered result. Any sizes less than 1, including 0, produce the same filtered result, this is correct based on sampling theory. </p>"
+    },
+    "modified": {
+        "params": [
+            "status"
+        ],
+        "docs": "<p>Get or set the 'modified' flag in a script. </p><ul><li><em>status:</em> optional new value</li></ul><dt>Returns</dt><dd>1 if script was modified, else 0</dd><p>Setting the value will turn the indicator in the title bar on/off and will start or stop the autosave timeout. If no argument is provided this returns the current modified state.</p><dt>See also</dt><dd><a>quit</a></dd>"
+    },
+    "byte": {
+        "params": [
+            "string",
+            "index"
+        ],
+        "docs": "<p>Utility function to extract single 8-bit values from a tcl string. Warning: if there are foreign letters this will return the bytes of the UTF-8 encoding. Use \"string index \\a string \\a index\" to get the UTF-8 character. </p><ul><li><em>string</em></li><li><em>index</em> starting at 0 <dt>Returns</dt><dd>a 2 digit hexadecimal number, i.e. <code>0xFF</code></dd><dt>See also</dt><dd><a>char</a>, <a>string</a></dd></li></ul>"
+    },
+    "char": {
+        "params": [
+            "unicode"
+        ],
+        "docs": "<p>Turn single character number into a string. </p><ul><li><em>unicode:</em> character number</li></ul><p>Any characters greater than 127 will turn into a multibyte UTF-8 string. However most parts of Nuke (such as labels and the Text node) and the tcl interpreter understand this.</p><p>Zero will turn into \"\\xc0\\x80\" which tcl understands. However most nuke operators will not draw this correctly.</p><dt>See also</dt><dd><a>byte</a>, <a>string</a></dd>"
+    },
+    "set_expression": {
+        "params": [
+            "expression"
+        ],
+        "docs": "<p>Set the expression for the current Knob. </p><ul><li><em>expression:</em> text describing the new expression</li></ul><dt>See also</dt><dd><a>knob</a></dd>"
+    },
+    "fltk_color": {
+        "params": [
+            "color_code"
+        ],
+        "docs": "<p>Convert an FLTK color code into a packed RGBA. </p><ul><li><em>color_code:</em> either a color lookup table entry, or a packed RGB value</li></ul><p>Packed RGBA are stored in an unsigned integer: <code>0xRRGGBB00</code>. </p>"
+    },
+    "add_timeout": {
+        "params": [
+            "timeout",
+            "node",
+            "script"
+        ],
+        "docs": "<p>Add a timeout that will run a script after some elapsed time. </p><ul><li><em>timeout</em> in seconds, fractions are possible, i.e 0.5 </li><li><em>node:</em> optional script context node </li><li><em>script:</em> after the timeout elapses, Nuke will run this script, if found </li></ul>"
+    },
+    "version": {
+        "params": [
+            "testversion"
+        ],
+        "docs": "<p>Return the nuke version, or check a version number. </p><p>Just \"version\" will return a floating-point number describing the current nuke build. The number is M.nbbb, where M is the major number (4), n is the minor number (6), and bbb is the build number.</p><p>If you give an argument, a warning is produced if it is greater than this Nuke version. In addition smaller numbers are stored internally and may modify the parsing of scripts for back compatibility. This stored number is reset when the script is done loading.</p><p>Newer versions of Nuke - from 6.0v1 upwards - may specify an additional parameter for the release and phase numbers (e. g. v1b5) to allow version numbers to be unambiguous. Older versions of Nuke will ignore this additional parameter.</p><ul><li><em>version_float:</em> a floating point number representing the version this script was saved in </li><li><em>rel_phase:</em> an optional string such as \"v1b5\" to specify the release and phase numbers. If not specified, the version is obtained from the floating point number only (e. g. 5.1200 = 5.1v2); otherwise, only the major and minor numbers are used from the first argument, and the release and phase are taken from this one (e. g. 5.12345 v1b7 = 5.1v1b7). Nuke versions from 6.0v1 and onwards use the two parameter format.</li></ul><dt>See also</dt><dd>$version_major, $version_minor, $version_build, $nuke_version_alphabeta, $nuke_version_long, $version_long, <a>version</a></dd>"
+    },
+    "error_node": {
+        "docs": "<p>Return node that produced an error. </p><p>If in an expression node.error returned true, you can use this command to get the node that actually reported the error. This may be some input somewhere above the node named in the expression. If there is no error this returns 0.</p><dt>See also</dt><dd><a>error_message</a></dd>"
+    },
+    "error_message": {
+        "docs": "<p>Return error message. </p><p>If in an expression node.error returned true, you can use this command to get the error message. If there is no error this returns an empty string.</p><dt>See also</dt><dd><a>error_node</a></dd>"
+    },
+    "memory": {
+        "params": [
+            "command",
+            "arg"
+        ],
+        "docs": "<p>Get/set information about memory usage. </p><ul><li><em>command</em> word </li><li><em>arg</em>, optional argument to command</li></ul><p>All amounts are in bytes. Use math like \"n*1024*1024\" to get megabytes, etc. The return value can be printed in a more user-friendly version by passing it as an argument to the <a>bytes()</a> command.</p><p>Commands are:</p><ul><li>info ?node? : returns a report about all the users of memory and some other status information. If a node is provided, only users of memory that belong to that node are printed (group nodes other than root are not yet implemented).</li><li>free ?amount? : tries to reduce usage to the given amount. If the amount is not given zero is used, but it also halts any currently running update, which will unlock and free lots more memory, but it will take a lot longer for that update to restart again.</li><li>usage : return the current memory usage (this is the memory that this can potentially free, so it is less than the amount of RAM the program is actually using).</li><li>max_usage ?amount? : return or set the maximum memory usage. If usage goes over this then free is automatically called.</li><li>total_ram : return the total amount of RAM this machine has.</li><li>total_vm : return the operating system limit of how much RAM a program can use. On 32 bit machines this may be less than total_ram!</li><li>free_count ?amount? : return how many times free was called by the usage going over max_usage (does not count calls to free by this command). You can also set the counter to any value, most useful for resetting it to zero.</li><li>new_handler_count ?amount? : return how many times \"free 0\" was called by the systems memory allocator indicating that it had run out of memory. This is not good! You can also set the counter to any value, most useful for resetting it to zero.</li></ul><dt>See also</dt><dd><a>bytes</a></dd>"
+    },
+    "undo": {
+        "docs": "<p>No arguments: perform the most recent undo</p><p>\"undo count\" : return how many undos there are</p><p>\"undo cancel\" : undoes the pending undo being created, thus returning the script to the state it was before the current tcl command was started.</p><p>\"undo N\" : return a string describing the n'th undo.</p><p>\"undo -l N\" : return a much longer description of the undo </p>"
+    },
+    "python": {
+        "docs": "<p>Run a python command returning the result as a TCL string. </p><p>All the arguments are appended with spaces and the result sent to the python interpreter.</p><ul><li><em>-eval</em> arg ... - evaluates as a Python expression. Returns a string. This is the default behavior. </li><li><em>-exec</em> arg ... - evaluates as arbitrary code. No return value. </li></ul>"
+    },
+    "screen_width": {
+        "docs": "<p>Returns the width of a node in the DAG. </p><p>Note that this property is read only. </p>"
+    },
+    "screen_height": {
+        "docs": "<p>Returns the height of a node in the DAG. </p><p>Note that this property is read only. </p>"
+    },
+    "script_new": {
+        "params": [
+            "name"
+        ],
+        "docs": "<p>Start a new script. </p><ul><li><em>name:</em> optional script name</li></ul><p>Makes a new Untitled script and creates a new root node for it and displays the window. Currently this is implemented by forking a new copy of nuke, so the calling script will not be able to access the new script.</p><dt>See also</dt><dd><a>script_open</a>, <a>script_save</a>, * <a>script_save_as</a>, <a>script_exit</a>, <a>script_close</a></dd>"
+    },
+    "show_settings": {
+        "docs": "<p>Show the settings of the current group. </p><p>This opens the root or group setting Panel.</p><dt>See also</dt><dd>show, <a>show_dag</a></dd>"
+    },
+    "get_input": {
+        "params": [
+            "prompt"
+        ],
+        "docs": "<p>Pops up a box that lets the user type in an arbitrary string. </p><ul><li><em>prompt:</em> present the user with this message </li><li><em></em>?default?: default value for the input field <dt>Returns</dt><dd>user input</dd><dt>See also</dt><dd><a>get_filename</a>, <a>get_clipname</a>, <a>panel</a></dd></li></ul>"
+    },
+    "get_filename": {
+        "params": [
+            "prompt pattern",
+            "default"
+        ],
+        "docs": "<p>Pops up a file chooser dialog box. </p><ul><li><em>prompt:</em> present the user with this message </li><li><em></em>?pattern?: file selection pattern </li><li><em></em>?default?: default filename and path </li><li><em></em>?favorites?: which favorites to use: can be \"image\", \"script\", \"font\" <dt>Returns</dt><dd>user input</dd>\nYou can use the pattern to restrict the displayed choices to matching filenames, normal Unix glob rules are used here. <dt>See also</dt><dd><a>get_input</a>, <a>get_clipname</a>, <a>panel</a></dd></li></ul>"
+    },
+    "get_clipname": {
+        "params": [
+            "prompt pattern",
+            "default"
+        ],
+        "docs": "<p>Pops up a file chooser dialog box. </p><ul><li><em>prompt:</em> present the user with this message </li><li><em></em>?pattern?: file selection pattern </li><li><em></em>?default?: default filename and path <dt>Returns</dt><dd>user input</dd>\nYou can use the pattern to restrict the displayed choices to matching filenames, normal Unix glob rules are used here. Get_clipname compresses lists of filenames that only differ by an index number into a single entry called a 'clip'. <dt>See also</dt><dd><a>get_input</a>, <a>get_filename</a>, <a>panel</a></dd></li></ul>"
+    },
+    "ask": {
+        "params": [
+            "prompt"
+        ],
+        "docs": "<p>Show a Yes/No dialog. </p><ul><li><em>prompt:</em> present the user with this message <dt>Returns</dt><dd>user choice</dd>\nThis function shows a Yes/No dialog with the given message. <em>ask</em> will return 1 if the user clicked 'yes' or 0 otherwise. <dt>See also</dt><dd><a>message</a>, <a>alert</a>, <a>panel</a></dd></li></ul>"
+    },
+    "message": {
+        "params": [
+            "prompt"
+        ],
+        "docs": "<p>Show an info dialog box. </p><ul><li><em>prompt:</em> present the user with this message</li></ul><p>Pops up an info box (with a 'i' and the text message) and waits for the user to hit the OK button. </p><dt>See also</dt><dd><a>ask</a>, <a>alert</a>, <a>panel</a></dd>"
+    },
+    "alert": {
+        "params": [
+            "prompt"
+        ],
+        "docs": "<p>Show an alert dialog box. </p><ul><li><em>prompt:</em> present the user with this message</li></ul><p>Pops up an alert box (with a '!' and the text message) and waits for the user to hit the OK button. </p><dt>See also</dt><dd><a>ask</a>, <a>message</a>, <a>panel</a></dd>"
+    },
+    "menu": {
+        "params": [
+            "name key icon tooltip",
+            "command"
+        ],
+        "docs": "<p>Add a new menu item to a menu bar or replace it. </p><ul><li><em>name:</em> name and 'path' of the menu item </li><li><em></em>?key?: shortcut key </li><li><em></em>?icon?: filename of an image to use as icon </li><li><em></em>?tooltip?: short text to explain the function of the menu item </li><li><em>command:</em> tcl command to execute when menu is selected</li></ul><p>The menu item name is a slash-separated list of title and submenus, for instance \"File/Execute this...\". If '&' is given this makes a MicroSoft style underscored shortcut out of the next letter. To get a real '/', '\\', or '&', use '\\/', '\\\\', and '&&'.</p><p>The shortcut, if given, indicates a keyboard shortcut. \"#A\" means alt+A. \"^A\" means control+A. \"A\" means upper-case A. \"a\" means lower-case \"a\". \"F1\" is function key 1. There are also ways to bind the arrows and other keys but they are kind of obscure. Use \"\" if you want no shortcut.</p><p>The icon names an image to put to the left of the text. If you only want to see the icon, put \"@;\" before the last word of the name (as in \"/menu/submenu/@;item\"). Use \"\" if you want no icon.</p><p>The tooltip will be displayed when the user points the mouse at the item (currently only for top-level items). Use \"\" for no tooltip.</p><p>The command should be surrounded by '{' and '}' and is the scripting commands this item should execute. </p><dt>See also</dt><dd><a>menubar</a></dd>"
+    },
+    "get_color": {
+        "params": [
+            "prompt",
+            "default"
+        ],
+        "docs": "<p>Show a color chooser dialog. </p><ul><li><em>prompt:</em> present the user with this message </li><li><em></em>?default?: default color value <dt>Returns</dt><dd>return the selected color</dd>\nThis function shows a simple color chooser dialog. The format of the default color is either a value 0..255 in the fltk lookup table, or packed 8bit rgb, multiplied by 256, or in binary: 0xRRGGBB00. </li></ul>"
+    },
+    "panel": {
+        "params": [
+            "-w title",
+            "list"
+        ],
+        "docs": "<p>Create a dialog box with multiple UI elements. </p><p>This will pop up a modal dialog box with widgets the user can edit, and ok/cancel buttons on the bottom. If the cancel button is hit this returns an error. If ok is hit, the edited values are stored into tcl variables. You can use the same tcl variables to initialize the widgets.</p><p>tcl syntax: <code><b>panel</b> ?-w#? ?title? {{label var type args}...}</code></p><ul><li><em></em>?-w#?: optional - use -w followed by a number to set the desired panel width in pixels </li><li><em></em>?title?: optional panel title the following arguments can be repeated as many times as needed </li><li><em>label:</em> this is the label of the following UI element </li><li><em>var:</em> this variable contains the default value and the result after the panel is closed </li><li><em>args</em> depend on the UI desired element:<ul><li><em>f:</em> a text line with folder button to enter an search filenames</li><li><em>f2:</em> a text line with folder button to enter an search clips</li><li><em>m:</em> multiline text input (about 4 lines)</li><li><em>m2:</em> larger multiline input (8 lines)</li><li><em>n:</em> notepad - huge text field. n can be followed by the number of lines required, i.e. n3</li><li><em>b:</em> boolean check box</li><li><em>c:</em> RGB color chip</li><li><em>e:</em> enumeration pulldown, add tcl list of enumeration values</li><li><em>F:</em> text font pulldown menu</li><li><em>x:</em> expression input (needs some additinal variables)</li><li><em></em>(none): single line text input</li><li><em>buttons:</em> list of words for the buttons on the bottom</li></ul></li></ul><dt>See also</dt><dd><a>message</a>, <a>ask</a>, <a>alert</a></dd>"
+    },
+    "menubar": {
+        "params": [
+            "name position",
+            "size"
+        ],
+        "docs": "<p>Create a user menu bar in the DAG view. </p><ul><li><em>-spacing</em> n: set the spacing between menu items </li><li><em>-bg</em> image: optional background image </li><li><em>name:</em> access the menubar via this name </li><li><em>position:</em> 1=top, 2=right, 3=bottom, 4=left </li><li><em>size:</em> bar hight or width in pixels</li></ul><p>This creates an additional menu bar anywhere around the main view. Menu bars can hold additonal commands and shortcuts, called menu items.</p><dt>See also</dt><dd><a>menu</a></dd>"
+    },
+    "animations": {
+        "docs": "<p>Returns a list of animatable things the user wants to work on. </p><p>If this is a command being executed from a menu item in a curve editor, a list of the names of all selected curves is returned. If this list is empty a \"No curves selected\" error is produced.</p><p>If this is a command being executed from the pop-up list in a knob then a list of all the fields in the knob is returned.</p><p>If this is a command being executed from the right-mouse-button pop-up list in a field of a knob, the name of that field is returned.</p><p>Otherwise this produces an error indicating that the command requries a knob context. You can get such a context by doing \"in <knob> {command}\"</p><p>Also see the \"selected\" argument to the animation command.</p><dt>See also</dt><dd><a>in</a>, <a>animation</a>, <a>animation_start</a>, <a>animation_end</a>, <a>animation_increment</a></dd>"
+    },
+    "animation_start": {
+        "docs": "<p>Return first frame of animation. </p><p>Returns the starting frame (or x value) for the currently selected animations.</p><dt>See also</dt><dd><a>animation</a>, <a>animations</a>, <a>animation_end</a>, <a>animation_increment</a></dd>"
+    },
+    "animation_end": {
+        "docs": "<p>Return last frame of animation. </p><p>Returns the last frame (or x value) for the currently selected animations.</p><dt>See also</dt><dd><a>animation</a>, <a>animations</a>, <a>animation_start</a>, <a>animation_increment</a></dd>"
+    },
+    "animation_increment": {
+        "docs": "<p>Return frame interval. </p><p>Returns a recommended interval between samples of the currently selected animation.</p><dt>See also</dt><dd><a>animation</a>, <a>animations</a>, <a>animation_start</a>, <a>animation_end</a></dd>"
+    },
+    "animation": {
+        "params": [
+            "name",
+            "command..."
+        ],
+        "docs": "<p>Does operations on an animation curve. </p><p>The following commands are supported:</p><ul><li><em>clear</em> deletes all the keys from the animation.</li><li><em>erase</em><code>index ?last_index?</code> removes all keyframes between index ans last_index</li><li><em>expression</em><code>?newvalue?</code> returns or sets the expression for the animation. The default is \"curve\" or \"y\" which returns the interpolation of the keys.</li><li><em>generate</em><code>start end increment field expression ?field expression? ...</code> generates an animation with start, end, and increment. Multiple field/expression pairs generate a keyframe. Possible field commands are:<ul><li><em>x</em> sets the frame number for the next keyframe</li><li><em>y</em> sets the keyframe value</li><li><em>dy</em> sets the left slope</li><li><em>ldy</em> sets left and righ slope to the same value</li><li><em>la</em> and <em>ra</em> are the length of the slope handle in x direction. A value of 1 generates a handle that is one third of the distance to the next keyframe.</li></ul></li><li><em>index</em><code>x</code> returns the index of the last key with x <= t, return -1 for none.</li><li><em>is_key</em> return non-zero if there is a key with x == t. The actual return value is the index+1.</li><li><em>move</em><code>field expression ?field expression?</code> replaces all selected keys in an animations with new ones as explained above in <em>generate</em></li><li><em>name</em> returns a user-friendly name for this animation. This will eliminate any common prefix between this animation and all other selected ones, and also replaces \"mangled\" names returns by animations with nice ones.</li><li><em>size</em> returns the number of keys in the animation.</li><li><em>test</em> errors if no points in the animation are selected</li><li><em>y</em> index <code>?newvalue?</code> gets or sets the value of an animation.</li><li><em>x</em> index <code>?newvalue?</code> gets or sets the horizontal postion of a key. If the animation contains an expression or keyframes, the new value will be overridden.</li></ul><dt>See also</dt><dd><a>animations</a></dd>"
+    },
+    "script_open": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Open an existing script. </p><ul><li><em>filename:</em> optional script file name</li></ul><p>Opens a new script and root window containing the contents of the named file. Produces an error if the file does not exist or if it cannot be read.</p><p>If no script name is given, or the script name is a directory, Nuke will open a file chooser dialog.</p><dt>See also</dt><dd><a>script_new</a>, <a>script_save</a>, <a>script_save_as</a>, <a>script_exit</a>, <a>script_close</a></dd>"
+    },
+    "script_save_as": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Save the current script. </p><ul><li><em>filename:</em> script file name</li></ul><p>If <em>filename</em> is missing or is the name of a directory, this pops up a file chooser. It then changes the name of the current script to this filename and writes it to disk.</p><p>If the file already exists, it will ask the user if they should overwrite it. If you don't want this question, you should instead set root.name to the file name and do script_save instead.</p><dt>See also</dt><dd><a>script_new</a>, <a>script_open</a>, <a>script_save</a>, <a>script_exit</a>, <a>script_close</a></dd>"
+    },
+    "script_save": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Save the current script. </p><ul><li><em>filename:</em> optional script file name</li></ul><p>If filename is given, writes to that file, without changing the script name (use script_save_as to change the name). If no filename is given it writes the script's filename, and pops up a file chooser if the script is currently Untitled.</p><dt>See also</dt><dd><a>script_new</a>, <a>script_open</a>, <a>script_save_as</a>, <a>script_exit</a>, <a>script_close</a></dd>"
+    },
+    "script_exit": {
+        "docs": "<p>Exit Nuke. </p><p>Checks all scripts and pops up save options dialogs if they were changes since the last save. If the user doesn't cancel, this will exit Nuke.</p><dt>See also</dt><dd><a>script_new</a>, <a>script_open</a>, <a>script_save</a>, <a>script_save_as</a>, <a>script_close</a></dd>"
+    },
+    "script_close": {
+        "docs": "<p>Close the current script or group. </p><p>This is for a \"close\" menu item. It asks if the user wants to save the changes and then clears out the script and replaces it with an untitled one. This is also called by the window close button except if it exits the program rather than clearing out the root.</p><dt>See also</dt><dd><a>script_new</a>, <a>script_open</a>, <a>script_save</a>, <a>script_save_as</a>, <a>script_exit</a></dd>"
+    },
+    "node_paste": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Paste nodes from a script file or the clipboard. </p><ul><li><em>filename</em></li></ul><p>This function executes the script stored in a file. It is assumed the script is the result of a node_copy command. The filename can be \"%clipboard%\" to paste the operating system's clipboard contents.</p><dt>See also</dt><dd><a>node_copy</a>, <a>_node_delete</a></dd>"
+    },
+    "node_copy": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Copy all selected nodes into a file or the clipboard. </p><ul><li><em>filename</em></li></ul><p>The filename can be \"%clipboard%\" to indicate the operating system's cut & paste buffer.</p><dt>See also</dt><dd><a>node_paste</a>, <a>_node_delete</a></dd>"
+    },
+    "_node_delete": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Delete all selected items in a DAG_View. </p><p>Remove all selected nodes from the DAG. This method tries to keep arrows connected as well as possible.</p><dt>See also</dt><dd><a>node_paste</a>, <a>node_copy</a></dd>"
+    },
+    "parray": {
+        "params": [
+            "name"
+        ],
+        "docs": "<p>Print all the values in a tcl \"array\" variable. </p><ul><li><em>name:</em> name of variable</li></ul><p>Prints every entry in a variable accessed using $name(index) syntax, such as env. This is similar to the parray provided in many tcl implementations but has been modified to to not print the equal sign and produce legal syntax.</p><p>Flip a true/false knob on all selected nodes</p><ul><li><em>knob:</em> name of knob</li></ul><p>For all selected nodes, the given knob (if it exists) is set to the same value, so they all match. The value is chosen by taking the current value from the first node and inverting it.</p><p>Open a URL or file in system's browser</p><ul><li><em>url:</em> what to open</li></ul><p>Run the system's browser and open the named URL with it. Depending on how your system is setup you may be able to launch other programs and open other types of files with this.</p><p>Windows version cannot handle spaces in the url.</p><p>You can override how it does this by setting $env(BROWSER) to the program and arguments you want to run, the URL is added as another argument. The default value on Windows is \"rundll32.exe url.dll,FileProtocolHandler\" and the default value on Unix is \"konqueror\".</p><p>Append values to a variable</p><ul><li><em>variable</em></li><li><em>values</em></li></ul><p>Append all of the value arguments to the current value of variable varName. If varName doesn't exist, it is given a value equal to the concatenation of all the value arguments. This command provides an efficient way to build up long variables incrementally. For example, <code>append a $b'' is much more efficient than</code>set a $a$b'' if $a is long. </p>"
+    },
+    "array": {
+        "params": [
+            "option arrayName",
+            "arg ..."
+        ],
+        "docs": "<p>This command performs one of several operations on the variable given by arrayName. </p><ul><li><em>option</em> (see below) </li><li><em>array</em></li><li><em></em>...</li></ul><p>ArrayName must be the name of an existing array variable.</p><ul><li>array anymore arrayName searchId: Returns 1 if there are any more elements left to be processed in an array search</li><li>array donesearch arrayName searchId: This command terminates an array search and destroys all the state associated with that search.</li><li>array names arrayName: Returns a list containing the names of all of the elements in the array.</li><li>array nextelement arrayName searchId: Returns the name of the next element in arrayName, or an empty string if all elements of arrayName have already been returned in this search.</li><li>array size arrayName: Returns a decimal string giving the number of elements in the array.</li><li>array startsearch arrayName: This command initializes an element-by-element search through the array given by arrayName. </li></ul>"
+    },
+    "break": {
+        "docs": "<p>Exit a 'while' of 'foreach' loop. </p><p>This command may be invoked only inside the body of a looping command such as for or foreach or while. It returns a TCL_BREAK code to signal the innermost containing loop command to return immediately.</p><dt>See also</dt><dd><a>while</a>, <a>foreach</a></dd>"
+    },
+    "catch": {
+        "params": [
+            "command",
+            "varName"
+        ],
+        "docs": "<p>The catch command may be used to prevent errors from aborting command interpretation. </p><ul><li><em>command</em></li><li>optional <em>varname</em></li></ul><p>Catch calls the Tcl interpreter recursively to execute script, and always returns a TCL_OK code, regardless of any errors that might occur while executing script.</p><dt>See also</dt><dd><a>error</a></dd>"
+    },
+    "cd": {
+        "params": [
+            "directory"
+        ],
+        "docs": "<p>Change the current working directory to dirName. </p><ul><li>optional <em>directory</em></li></ul><p>Change the current working directory to dirName, or to the home directory if dirName is not given. If dirName starts with a tilde, then tilde-expansion is done as described for Tcl_TildeSubst. Returns an empty string.</p><dt>See also</dt><dd></dd>"
+    },
+    "close": {
+        "params": [
+            "fieldId"
+        ],
+        "docs": "<p>Closes the file given by fileId. </p><ul><li><em>fieldId</em></li></ul><p>FileId must be the return value from a previous invocation of the open command; after this command, it should not be used anymore. If fileId refers to a command pipeline instead of a file, then close waits for the children to complete.</p><dt>See also</dt><dd><a>open</a></dd>"
+    },
+    "concat": {
+        "params": [
+            "..."
+        ],
+        "docs": "<p>This command treats each argument as a list and concatenates them into a single list. </p><ul><li><em>arglist</em></li></ul><p>It also eliminates leading and trailing spaces in the arg's and adds a single separator space between arg's. It permits any number of arguments.</p><dt>See also</dt><dd><a>join</a>, lists </dd>"
+    },
+    "continue": {
+        "docs": "<p>Continue at the end of a loop. </p><p>This command may be invoked only inside the body of a looping command such as for or foreach or while. It returns a TCL_CONTINUE code to signal the innermost containing loop command to skip the remainder of the loop's body but continue with the next iteration of the loop.</p><dt>See also</dt><dd><a>foreach</a>, <a>while</a>, <a>break</a></dd>"
+    },
+    "eof": {
+        "params": [
+            "channelId"
+        ],
+        "docs": "<p>Returns 1 if an end-of-file condition has occurred on fileId, 0 otherwise. </p><ul><li><em>channelId</em></li></ul><p>FileId must have been the return value from a previous call to open, or it may be stdin, stdout, or stderr to refer to one of the standard I/O channels.</p><dt>See also</dt><dd><a>open</a>, <a>close</a></dd>"
+    },
+    "error": {
+        "params": [
+            "message",
+            "errorInfo",
+            "errorCode"
+        ],
+        "docs": "<p>Returns a TCL_ERROR code, which causes command interpretation to be unwound. </p><ul><li><em>message</em></li><li>optional <em>errorInfo</em></li><li>optional <em>errorCode</em></li></ul><p>Message is a string that is returned to the application to indicate what went wrong. If the info argument is provided and is non-empty, it is used to initialize the global variable errorInfo. If the code argument is present, then its value is stored in the errorCode global variable.</p><dt>See also</dt><dd><a>exit</a></dd>"
+    },
+    "eval": {
+        "params": [
+            "arg ..."
+        ],
+        "docs": "<p>Evaluate a list of tcl functions. </p><ul><li><em>arg</em></li></ul><p>Eval takes one or more arguments, which together comprise a Tcl script containing one or more commands. Eval concatenates all its arguments in the same fashion as the concat command, passes the concatenated string to the Tcl interpreter recursively, and returns the result of that evaluation (or any error generated by it).</p><dt>See also</dt><dd><a>exec</a>, <a>expr</a></dd>"
+    },
+    "exec": {
+        "params": [
+            "switches",
+            "arg ..."
+        ],
+        "docs": "<p>execute tcl commands </p><ul><li><em>switches</em></li><li><em>arg_list</em></li></ul><p>This command treats its arguments as the specification of one or more subprocesses to execute. The arguments take the form of a standard shell pipeline where each arg becomes one word of a command, and each distinct command becomes a subprocess.</p><dt>See also</dt><dd><a>eval</a></dd>"
+    },
+    "exit": {
+        "params": [
+            "returnCode"
+        ],
+        "docs": "<p>Terminate the process, returning returnCode to the system as the exit status. </p><ul><li><em>returnCode</em></li></ul><p>If returnCode isn't specified then it defaults to 0.</p><dt>See also</dt><dd><a>catch</a>, <a>exec</a></dd>"
+    },
+    "expr": {
+        "params": [
+            "expression"
+        ],
+        "docs": "<p>Evaluate an expression. </p><ul><li><em>expression</em></li></ul><p>Concatenates arg's, evaluates the result as a Tcl expression, and returns the value. The operators permitted in Tcl expressions are a subset of the operators permitted in C expressions, and they have the same meaning and precedence as the corresponding C operators.</p><p>Nuke adds many application specific expressions to tcl.</p><dt>See also</dt><dd><a>eval</a>, <a>exec</a></dd>"
+    },
+    "fblocked": {
+        "params": [
+            "channelId"
+        ],
+        "docs": "<p>Checks, if a tcl stream would block if read now. </p><ul><li><em>channelId</em></li></ul><dt>See also</dt><dd><a>open</a>, <a>close</a>, <a>eof</a></dd>"
+    },
+    "fconfigure": {
+        "params": [
+            "channelId optionName",
+            "value",
+            "optionName",
+            "value ..."
+        ],
+        "docs": "<p>Additional configuration of tcl streams. </p><ul><li><em>channleId</em></li><li><em>option</em> parameters</li></ul><dt>See also</dt><dd><a>open</a>, <a>close</a></dd>"
+    },
+    "file": {
+        "params": [
+            "option name",
+            "arg ..."
+        ],
+        "docs": "<p>This command provides several operations on a file's name or attributes. </p><ul><li><em>option</em></li><li><em>name</em></li><li><em>arguments</em> depending on option</li></ul><p>Name is the name of a file; if it starts with a tilde, then tilde substitution is done before executing the command.</p><p><em>Option</em> can be one of <em>atime</em>, <em>dirname</em>, <em>executable</em>, <em>exists</em>, <em>extension</em>, <em>isdirectory</em>, <em>isfile</em>, <em>lstat</em>, <em>mtime</em>, <em>owned</em>, <em>readable</em>, <em>readlink</em>, <em>rootname</em>, <em>size</em>, <em>stat</em>, <em>tail</em>, <em>type</em>, <em>writable</em></p><dt>See also</dt><dd><a>open</a>, <a>close</a>, <a>eof</a></dd>"
+    },
+    "flush": {
+        "params": [
+            "channelId"
+        ],
+        "docs": "<p>Flushes any output that has been buffered for fileId. </p><ul><li><em>channelId</em></li></ul><p>FileId must have been the return value from a previous call to open, or it may be stdout or stderr to access one of the standard I/O streams; it must refer to a file that was opened for writing. The command returns an empty string.</p><dt>See also</dt><dd><a>open</a>, <a>file</a></dd>"
+    },
+    "for": {
+        "params": [
+            "start test next",
+            "command"
+        ],
+        "docs": "<p>For is a looping command, similar in structure to the C language <em>for</em> statement. </p><ul><li><em>start</em></li><li><em>test</em></li><li><em>next</em></li><li><em>command</em></li></ul><p>The start, next, and body arguments must be Tcl command strings, and test is an expression string. The for command first invokes the Tcl interpreter to execute start. Then it repeatedly evaluates test as an expression; if the result is non-zero it invokes the Tcl interpreter on body, then invokes the Tcl interpreter on next, then repeats the loop. <br></br></p><dt>See also</dt><dd><a>foreach</a>, <a>while</a>, <a>continue</a>, <a>break</a></dd>"
+    },
+    "foreach": {
+        "params": [
+            "varList",
+            "list",
+            "varList",
+            "list",
+            "...",
+            "command"
+        ],
+        "docs": "<p>Loop through all elements in a list. </p><ul><li><em>varlist</em><em>list</em>, can be repeated</li></ul><p>In this command varname is the name of a variable, list is a list of values to assign to varname, and body is a Tcl script. For each element of list, foreach assigns the contents of the field to varname, then calls the Tcl interpreter to execute body.</p><dt>See also</dt><dd><a>for</a>, <a>continue</a>, <a>break</a></dd>"
+    },
+    "format": {
+        "params": [
+            "formatString",
+            "arg ..."
+        ],
+        "docs": "<p>Generate a formatted text string. </p><ul><li><em>formatString</em></li><li><em>arg_list</em></li></ul><p>This command generates a formatted string in the same way as the ANSI C sprintf procedure. FormatString indicates how to format the result, using % conversion specifiers as in sprintf, and the additional arguments provide values to be substituted.</p><p>The most commonly used format descriptor in Nuke is <code>%04d</code> to describe four-digit frame number.</p><dt>See also</dt><dd><a>puts</a>, <a>scan</a></dd>"
+    },
+    "gets": {
+        "params": [
+            "channelId",
+            "varName"
+        ],
+        "docs": "<p>Read a line of data from a tcl stream. </p><ul><li><em>channelId</em></li><li>optional <em>varName</em></li></ul><p>This command reads the next line from the file given by fileId and discards the terminating newline character. If varName is specified then the line is placed in the variable by that name and the return value is a count of the number of characters read.</p><dt>See also</dt><dd><a>open</a>, <a>file</a>, <a>eof</a></dd>"
+    },
+    "glob": {
+        "params": [
+            "switches",
+            "name ..."
+        ],
+        "docs": "<p>Filename pattern matching. </p><ul><li>optional <em>switches</em></li><li><em>name_list</em></li></ul><p>This command performs file name \"globbing\" in a fashion similar to the csh shell. It returns a list of the files whose names match any of the pattern arguments.</p><dt>See also</dt><dd><a>file</a>, <a>open</a></dd>"
+    },
+    "global": {
+        "params": [
+            "varName ..."
+        ],
+        "docs": "<p>declare global variables while in procedure. </p><ul><li><em>varName_list</em></li></ul><p>This command is ignored unless a Tcl procedure is being interpreted. If so then it declares the given varname's to be global variables rather than local ones. For the duration of the current procedure, any reference to any of the varnames will refer to the global variable by the same name.</p><dt>See also</dt><dd><a>proc</a></dd>"
+    },
+    "if": {
+        "params": [
+            "expression",
+            "command elseif command2 else",
+            "commandn"
+        ],
+        "docs": "<p>Conditional execution of commands. </p><ul><li><em>expr1</em></li><li><em>command1</em></li><li>optional: <em>elseif</em><em>expr2</em><em>command2</em></li><li>optional: <em>else</em><em>commandn</em></li></ul><p>The if command evaluates expression. The value of the expression must be a boolean (0 is false and anything is true); if it is true then command1 is executed. Otherwise expr2 is evaluated and if true, command2 is is executed, and so on.</p><dt>See also</dt><dd><a>for</a>, <a>foreach</a></dd>"
+    },
+    "incr": {
+        "params": [
+            "varName",
+            "increment"
+        ],
+        "docs": "<p>Increment a numeric variable by one. </p><ul><li><em>variable</em></li><li>optional <em>increment</em></li></ul><dt>See also</dt><dd><a>puts</a></dd>"
+    },
+    "info": {
+        "params": [
+            "option",
+            "arg ..."
+        ],
+        "docs": "<p>This command provides information about various internals of the Tcl interpreter. </p><ul><li><em>option</em></li><li><em>arg_list</em></li></ul><p>Valid options are args, body, cmdcount, commands, complete, default, exists, globals, level, library, locals, patchlevel, procs, script, tclversion, vars </p>"
+    },
+    "join": {
+        "params": [
+            "list",
+            "joinString"
+        ],
+        "docs": "<p>join elements of a list using string a as a seperator. </p><ul><li><em>list</em></li><li>optional: <em>string</em></li></ul><p>The list argument must be a valid Tcl list. This command returns the string formed by joining all of the elements of list together with joinString separating each adjacent pair of elements. The joinString argument defaults to a space character.</p><dt>See also</dt><dd>append, <a>split</a></dd>"
+    },
+    "lappend": {
+        "params": [
+            "varName",
+            "value ..."
+        ],
+        "docs": "<p>Append values to the left of a variable. </p><ul><li><em>varName</em></li><li><em>argList</em></li></ul><dt>See also</dt><dd>append </dd>"
+    },
+    "lindex": {
+        "params": [
+            "list",
+            "index"
+        ],
+        "docs": "<p>Return the n'th list of a tcl list. </p><ul><li><em>list</em></li><li><em>index</em></li></ul><p>This command treats list as a Tcl list and returns the index'th element from it (0 refers to the first element of the list). </p>"
+    },
+    "linsert": {
+        "params": [
+            "list",
+            "index",
+            "element ..."
+        ],
+        "docs": "<p>Insert elements before the indexed element in a list. </p><ul><li><em>list</em></li><li><em>index</em></li><li><em>element_list</em></li></ul><p>This command produces a new list from list by inserting all of the element arguments just before the indexth element of list. Each element argument will become a separate element of the new list.</p><dt>See also</dt><dd>append, <a>lappend</a>, <a>lindex</a></dd>"
+    },
+    "list": {
+        "params": [
+            "word ..."
+        ],
+        "docs": "<p>This command returns a list comprised of all the args, or an empty string if no arguments are specified. </p><ul><li><em>words</em></li></ul><p>Braces and backslashes get added as necessary, so that the index command may be used on the result to re-extract the original arguments, and also so that eval may be used to execute the resulting list, with arg1 comprising the command's name and the other args comprising its arguments.</p><dt>See also</dt><dd><a>lindex</a></dd>"
+    },
+    "llength": {
+        "params": [
+            "list"
+        ],
+        "docs": "<p>Returns the number of elements in a list. </p><ul><li><em>list</em></li></ul><dt>See also</dt><dd><a>list</a></dd>"
+    },
+    "lrange": {
+        "params": [
+            "list",
+            "first",
+            "last"
+        ],
+        "docs": "<p>This command will return a new list consisting of elements first through last, inclusive. </p><ul><li><em>list</em></li><li><em>first</em></li><li><em>last</em></li></ul><p>Last may be end to refer to the last element of the list. If first is less than zero, it is treated as if it were zero. If last is greater than or equal to the number of elements in the list, then it is treated as if it were end. </p>"
+    },
+    "lreplace": {
+        "params": [
+            "list",
+            "first last",
+            "element ..."
+        ],
+        "docs": "<p>lreplace returns a new list formed by replacing one or more elements of list </p><ul><li><em>list</em></li><li><em>first</em></li><li><em>last</em></li><li><em>element_list</em></li></ul>"
+    },
+    "lsearch": {
+        "params": [
+            "mode",
+            "list",
+            "pattern"
+        ],
+        "docs": "<p>This command searches the elements of list to see if one of them matches pattern. </p><ul><li><em>mode</em>, optional: -exact, -glob, -regexp </li><li><em>list</em></li><li><em>pattern</em></li></ul><p>If so, the command returns the index of the first matching element. If not, the command returns -1 </p>"
+    },
+    "lsort": {
+        "params": [
+            "mode",
+            "list"
+        ],
+        "docs": "<p>This command sorts the elements of list, returning a new list in sorted order. </p><ul><li><em>mode</em>, optional: -ascii, -integer, -real, -command, -increasing, -decreasing </li><li><em>list</em></li></ul><p>By default ASCII sorting is used with the result returned in increasing order. However, any of the switches may be specified before list to control the sorting process.</p><dt>See also</dt><dd></dd>"
+    },
+    "open": {
+        "params": [
+            "fileName access",
+            "permissions"
+        ],
+        "docs": "<p>This command opens a file and returns an identifier. </p><ul><li><em>filename</em></li><li>optional <em>access</em></li><li>optional <em>permissions</em></li></ul><p>Possible values for access are r, r+, w, w+, a, a+. Permission can be set in octal notation. The default it 0666.</p><dt>See also</dt><dd><a>read</a>, put, <a>close</a>, <a>eof</a></dd>"
+    },
+    "pid": {
+        "params": [
+            "fieldID"
+        ],
+        "docs": "<p>Return the ID of the current process. </p><ul><li>optional <em>fieldId</em></li></ul><p>If the fileId argument is given then the pid command will return a list whose elements are the process identifiers of all the processes in the pipeline, in order. </p>"
+    },
+    "proc": {
+        "params": [
+            "name args",
+            "body"
+        ],
+        "docs": "<p>Create a new tcl Procedure. </p><ul><li><em>name</em></li><li><em>args</em></li><li><em>body</em></li></ul>"
+    },
+    "puts": {
+        "params": [
+            "-nonewline channelId",
+            "string"
+        ],
+        "docs": "<p>Writes the characters given by string to the file given by fileId. </p><ul><li>optional <em>-nonewline</em></li><li>optional <em>channelId</em></li><li><em>string</em></li></ul><p>FileId must have been the return value from a previous call to open, or it may be stdout or stderr to refer to one of the standard I/O channels.</p><dt>See also</dt><dd><a>open</a>, <a>file</a>, <a>flush</a></dd>"
+    },
+    "read": {
+        "params": [
+            "-nonewline channelId",
+            "numBytes"
+        ],
+        "docs": "<p>read a number of bytes from a tcl stream </p><ul><li>optional <em>-nonewline</em></li><li><em>channelId</em></li><li>optional <em>bytes:</em> number of bytes to read, default reads to end of file</li></ul><dt>See also</dt><dd><a>open</a>, <a>close</a>, <a>eof</a></dd>"
+    },
+    "regexp": {
+        "params": [
+            "switches",
+            "exp",
+            "string",
+            "matchVar",
+            "subMatchVar ..."
+        ],
+        "docs": "<p>Determines whether the regular expression exp matches part or all of string and returns 1 if it does, 0 if it doesn't. </p><ul><li>optional <em>switches:</em> -nocase or -indices </li><li><em>expression</em></li><li><em>string</em></li><li>optional <em>matchVar</em></li><li>optional <em>subMatchVar_list</em></li></ul><p>If additional arguments are specified after string then they are treated as the names of variables in which to return information about which part(s) of string matched exp. MatchVar will be set to the range of string that matched all of exp. </p>"
+    },
+    "regsub": {
+        "params": [
+            "switches",
+            "exp",
+            "string",
+            "subSpec",
+            "varName"
+        ],
+        "docs": "<p>This command matches the regular expression exp against string. </p><ul><li><em>swicthes:</em> -all or -nocase </li><li><em>exp:</em> regular expression </li><li><em>string</em></li><li><em>subSpec</em></li><li><em>varName</em></li></ul><p>It copies string to the variable whose name is given by varName. The command returns 1 if there is a match and 0 if there isn't. If there is a match, then while copying string to varName the portion of string that matched exp is replaced with subSpec.</p><dt>See also</dt><dd><a>regexp</a></dd>"
+    },
+    "rename": {
+        "params": [
+            "oldName",
+            "newName"
+        ],
+        "docs": "<p>Rename a command. </p><ul><li><em>oldName</em></li><li><em>newName</em></li></ul><p>Rename the command that used to be called oldName so that it is now called newName. If newName is an empty string then oldName is deleted. The rename command returns an empty string as result. </p>"
+    },
+    "return": {
+        "params": [
+            "value"
+        ],
+        "docs": "<p>Return immediately from the current procedure. </p><ul><li>optional <em>value</em></li></ul><p>Return immediately from the current procedure or top-level command or source command, with string as the return value.</p><dt>See also</dt><dd><a>exit</a>, <a>proc</a></dd>"
+    },
+    "scan": {
+        "params": [
+            "string",
+            "format",
+            "varName ..."
+        ],
+        "docs": "<p>Parse an input string. </p><ul><li><em>string</em></li><li><em>format</em></li><li><em>variable_list</em></li></ul><p>This command parses fields from an input string in the same fashion as the ANSI C sscanf procedure and returns a count of the number of fields sucessfully parsed.</p><p>Nuke uses the format <code>%04d</code> to read image number in a four digit format.</p><dt>See also</dt><dd><a>format</a></dd>"
+    },
+    "seek": {
+        "params": [
+            "channelId offset",
+            "origin"
+        ],
+        "docs": "<p>Change the current access position for fileId. </p><ul><li><em>channelId</em></li><li><em>offset</em></li><li><em>origin</em>, optional: <em>start</em>, <em>current</em> or <em>end</em></li></ul><p>The offset and origin arguments specify the position at which the next read or write will occur for fileId. Offset must be an integer and origin must be one of the above.</p><dt>See also</dt><dd><a>open</a>, <a>file</a>, <a>gets</a>, <a>read</a></dd>"
+    },
+    "set": {
+        "params": [
+            "varName",
+            "newValue"
+        ],
+        "docs": "<p>Returns the value of variable varName. </p><ul><li><em>varName</em></li><li>optional <em>newValue</em></li></ul><p>If value is specified, then set the value of varName to value, creating a new variable if one doesn't already exist, and return its value.</p><dt>See also</dt><dd><a>puts</a></dd>"
+    },
+    "socket": {
+        "params": [
+            "-server command -myaddr addr -myport myport -async host",
+            "port"
+        ],
+        "docs": "<p>Open a tcl network channel. </p><p>Format: <code> socket ?-myaddr addr? ?-myport myport? ?-async? host port </code> or <code> socket -server command ?-myaddr addr? port </code></p><dt>See also</dt><dd><a>open</a></dd>"
+    },
+    "source": {
+        "params": [
+            "filename"
+        ],
+        "docs": "<p>Interprete the contents of a file as a tcl script. </p><ul><li><em>filename</em></li></ul><p>Read file fileName and pass the contents to the Tcl interpreter as a script to evaluate in the normal fashion. The return value from source is the return value of the last command executed from the file.</p><dt>See also</dt><dd><a>exec</a></dd>"
+    },
+    "split": {
+        "params": [
+            "string",
+            "splitChars"
+        ],
+        "docs": "<p>Split a string into a list. </p><ul><li><em>list</em></li><li>optional <em>splitChars</em></li></ul><p>Returns a list created by splitting string at each character that is in the splitChars argument. Each element of the result list will consist of the characters from string that lie between instances of the characters in splitChars.</p><dt>See also</dt><dd>append, <a>join</a></dd>"
+    },
+    "string": {
+        "params": [
+            "option",
+            "arg ..."
+        ],
+        "docs": "<p>Performs one of several string operations, depending on option. </p><ul><li><em>option</em></li><li><em>arglist</em></li></ul><p>Valid options are: compare, first, index, last, length, match, range, tolower, toupper, trim, trimleft, trimright. </p>"
+    },
+    "subst": {
+        "params": [
+            "option",
+            "string"
+        ],
+        "docs": "<p>Evaluate elements of a string. </p><ul><li><em>options:</em> -nobackslashes, -nocommands, or -novariables </li><li><em>string</em></li></ul><p>Replaces tcl variables, commands, and quoting in a string (such as one read from a file) with the correct expansions. </p>"
+    },
+    "switch": {
+        "params": [
+            "switches",
+            "string",
+            "pattern body ... default",
+            "body"
+        ],
+        "docs": "<p>The switch command matches its string argument against each of the pattern arguments in order. </p><ul><li><em>switches:</em> -exact, -glob, -regexp</li></ul><p>As soon as it finds a pattern that matches string it evaluates the following body argument by passing it recursively to the Tcl interpreter and returns the result of that evaluation. If the last pattern argument is default then it matches anything.</p><dt>See also</dt><dd><a>if</a></dd>"
+    },
+    "tell": {
+        "params": [
+            "channelId"
+        ],
+        "docs": "<p>Returns a decimal string giving the current access position in fileId. </p><ul><li><em>channelId</em></li></ul><dt>See also</dt><dd><a>open</a>, <a>file</a>, <a>seek</a></dd>"
+    },
+    "time": {
+        "params": [
+            "command",
+            "count"
+        ],
+        "docs": "<p>This command will call the Tcl interpreter count times to evaluate script. </p><ul><li><em>command</em></li><li>optional <em>count</em></li></ul><p>It will then return a string of the form <code>503 microseconds per iteration</code> which indicates the average amount of time required per iteration, in microseconds. Time is measured in elapsed time, not CPU time. </p>"
+    },
+    "trace": {
+        "params": [
+            "option",
+            "arg ..."
+        ],
+        "docs": "<p>trace access to a variable. </p><ul><li><em>option</em></li><li><em>variableList</em></li></ul><p>This command causes Tcl commands to be executed whenever certain operations are invoked. At present, only variable tracing is implemented. The legal option's are:</p><ul><li><em>r:</em> Invoke command whenever the variable is read.</li><li><em>w:</em> Invoke command whenever the variable is written.</li><li><em>u:</em> Invoke command whenever the variable is unset. </li></ul>"
+    },
+    "unset": {
+        "params": [
+            "varName ..."
+        ],
+        "docs": "<p>This command removes one or more variables. </p><ul><li><em>varaiableList</em></li></ul><p>Each name is a variable name, specified in any of the ways acceptable to the set command. If a name refers to an element of an array then that element is removed without affecting the rest of the array.</p><dt>See also</dt><dd><a>set</a>, <a>puts</a></dd>"
+    },
+    "while": {
+        "params": [
+            "expression",
+            "command"
+        ],
+        "docs": "<p>Repeatedly execute a command while expression is true. </p><ul><li><em>expression</em></li><li><em>command</em></li></ul><p>The while command evaluates expression. If expression is a true value then body is executed by passing it to the Tcl interpreter.</p><dt>See also</dt><dd><a>for</a>, <a>foreach</a>, <a>break</a>, <a>continue</a></dd>"
+    }
+}
