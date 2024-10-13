@@ -138,10 +138,13 @@ class TCLEditor(QPlainTextEdit):
             
     def textUnderCursor(self):
         tc = self.textCursor()
+        tc.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, 1)
+        if tc.selectedText() == " ":
+            return ""
         tc.select(QTextCursor.WordUnderCursor)
         word = tc.selectedText()
         
-        if word in ("}]"):
+        if word in ("}]"):  
             tc.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, 2)
             tc.select(QTextCursor.WordUnderCursor)
             word = tc.selectedText()
@@ -179,12 +182,15 @@ class TCLEditor(QPlainTextEdit):
         ctrlOrShift = event.modifiers() in (Qt.ControlModifier, Qt.ShiftModifier)
         if ctrlOrShift and event.text() == '':
             return
+        
+        if event.key() == Qt.Key_Backspace:
+            return
 
         eow = "~!@#$%^&*()_+{|:\"<>?,./'\\-[]]};="
         hasModifier = (event.modifiers() != Qt.NoModifier) and not ctrlOrShift
         completionPrefix = self.textUnderCursor()
         
-        if not isShortcut and (hasModifier or
+        if not isShortcut and (hasModifier or event.text() == '' or
                                len(completionPrefix) < 3 or
                                event.text()[-1] in eow):
             
