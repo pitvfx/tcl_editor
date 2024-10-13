@@ -150,11 +150,12 @@ class TCLEditor(QPlainTextEdit):
             word = tc.selectedText()
         return word
 
-    def focusInEvent(self, event):
-        if self.completer:
-            self.completer.setWidget(self)
-        super().focusInEvent(event)
-
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        if self.keep_focus:
+            self.keep_focus = False
+            self.setFocus()
+                
     def keyPressEvent(self, event):
         if self.completer and self.completer.popup().isVisible():
             if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab):
@@ -193,7 +194,8 @@ class TCLEditor(QPlainTextEdit):
         if not isShortcut and (hasModifier or event.text() == '' or
                                len(completionPrefix) < 3 or
                                event.text()[-1] in eow):
-            
+            if event.key() == Qt.Key_Space:
+                return True
             self.completer.popup().hide()
             return
 
