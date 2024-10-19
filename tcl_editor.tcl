@@ -1,6 +1,7 @@
 # Store the original puts command
- catch {rename puts original_puts}
-
+if {[llength [info commands original_puts]] == 0} {
+    catch {rename puts original_puts}
+}
 # Create a global variable to store captured output
  set captured_output {}
 
@@ -12,9 +13,12 @@ proc puts {args} {
 }
 
 proc run_code {} {
-    uplevel 1 [knob this.code]
+    if {[catch {uplevel 1 [knob this.code]} result]} {
+        set new_output [list "ERROR: $result"]
+    } else {
+        set new_output [get_and_clear_output]
+    }
     set output [knob this.output]
-    set new_output [get_and_clear_output]
     if {[llength $new_output] > 0} {
         append output [join $new_output "\n"]\n
     }
