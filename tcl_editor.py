@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
-import nuke
-import pyui
+import nuke # pylint: disable=import-error
+import pyui # pylint: disable=import-error
 
 from PySide2.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPlainTextEdit, QCompleter
 from PySide2.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics, QFocusEvent
@@ -256,8 +256,10 @@ class TCLEditor(QPlainTextEdit):
                 return True
         
         super().mousePressEvent(event)
-class TCLEditorPanel(nuke.PanelNode):
 
+
+class TCLEditorPanel(nuke.PanelNode):
+        
     def __init__(self):
         super().__init__()
         nuke.tcl("catch {load tcl_editor.tcl}")
@@ -269,10 +271,10 @@ class TCLEditorPanel(nuke.PanelNode):
         return self
 
     def build_panel(self):
-        self.editor = nuke.PyCustom_Knob("editor", "", "tcl_editor.EditorKnob(nuke.thisNode())")
+        self.editor = nuke.PyCustom_Knob("editor", "", "__import__('tcl_editor').EditorKnob(nuke.thisNode())")
         self.code = nuke.Multiline_Eval_String_Knob("code", "")
         self.code.setFlag(nuke.READ_ONLY|nuke.INVISIBLE)
-        self.run_button = nuke.Script_Knob("run", "run", "run_code")
+        self.run_button = nuke.Script_Knob("run", "run", "load tcl_editor.tcl;run_code")
         self.run_button.setFlag(nuke.STARTLINE)
         self.clear_button = nuke.Script_Knob("clear", "clear", 'knob this.output ""')
         self.output = nuke.Multiline_Eval_String_Knob("output", "")
@@ -282,8 +284,22 @@ class TCLEditorPanel(nuke.PanelNode):
         self.dialog.add(self.createWidget())
 
     def show(self):
-        self.dialog.show()
+        pane = nuke.getPaneFor("uk.co.thefoundry.scripteditor.1") or nuke.thisPane()
+        
+        if pane:
+            pane.add(self.dialog)
+        else:
+            self.dialog.show()
+        nuke.addKnobChanged(TCLEditorPanel.onKnobChanged, args=(self.panel, ), nodeClass='PanelNode', node=self.panel)
+        return self.dialog
+    
+    def onKnobChanged(self):
+        self.knobChanged(nuke.thisKnob())
 
+    def knobChanged(self, knob):
+        if knob == self.run_button:
+            # TODO: update procs and vars
+            pass
 
 class EditorKnob():
 
@@ -298,6 +314,7 @@ class EditorKnob():
     def makeUI(self):
         return self.qtwidget
 
+_editor = TCLEditorPanel()
 
 def editor():
-    return TCLEditorPanel()
+    return _editor.show()
