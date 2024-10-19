@@ -12,8 +12,7 @@ proc puts {args} {
 }
 
 proc run_code {} {
-    python {"print run code"}
-    eval [knob this.code]
+    uplevel 1 [knob this.code]
     set output [knob this.output]
     set new_output [get_and_clear_output]
     if {[llength $new_output] > 0} {
