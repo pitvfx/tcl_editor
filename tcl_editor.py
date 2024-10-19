@@ -22,7 +22,8 @@ class TCLSyntaxHighlighter(QSyntaxHighlighter):
         string_format = QTextCharFormat()
         string_format.setForeground(QColor("#CE9178"))
         self.highlighting_rules.append((QRegExp("\".*\""), string_format))
-
+        self.highlighting_rules.append((QRegExp("\'.*\'"), string_format))
+        
         comment_format = QTextCharFormat()
         comment_format.setForeground(QColor("#6A9955"))
         self.highlighting_rules.append((QRegExp("#[^\n]*"), comment_format))
@@ -157,22 +158,28 @@ class TCLEditor(QPlainTextEdit):
             self.setFocus()
                 
     def keyPressEvent(self, event):
+        
         if self.completer and self.completer.popup().isVisible():
             if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab):
                 event.ignore()
                 return
 
         # Auto-closing feature
-        if event.key() in (Qt.Key_ParenLeft, Qt.Key_BracketLeft, Qt.Key_BraceLeft, Qt.Key_QuoteDbl, Qt.Key_Apostrophe):
+        if event.key() in (Qt.Key_ParenLeft, Qt.Key_BracketLeft, Qt.Key_BraceLeft, Qt.Key_QuoteDbl, Qt.Key_Apostrophe) and event.text() in self.auto_pairs:
             opening_char = event.text()
-            closing_char = self.auto_pairs.get(opening_char)
-            
-            if closing_char:
-                cursor = self.textCursor()
-                cursor.insertText(opening_char + closing_char)
-                cursor.movePosition(QTextCursor.Left)
-                self.setTextCursor(cursor)
-                return
+            closing_char = self.auto_pairs[opening_char]
+            cursor = self.textCursor()
+            if not cursor.hasSelection():
+                # check if the cursor is at the beginning of a word
+                cursor.movePosition(QTextCursor.EndOfWord, QTextCursor.KeepAnchor)
+            selected_text = cursor.selectedText()
+            if selected_text == opening_char or selected_text in self.auto_pairs.values():
+                selected_text = ""
+                cursor.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor)
+            cursor.insertText(f"{opening_char}{selected_text}{closing_char}")
+            cursor.movePosition(QTextCursor.Left)
+            self.setTextCursor(cursor)
+            return
 
         isShortcut = (event.modifiers() == Qt.ControlModifier and
                       event.key() == Qt.Key_Space)
