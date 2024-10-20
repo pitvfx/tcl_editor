@@ -4,14 +4,15 @@ import nuke # pylint: disable=import-error
 import pyui # pylint: disable=import-error
 
 from PySide2.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPlainTextEdit, QCompleter
-from PySide2.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics, QFocusEvent
-from PySide2.QtCore import QRegExp, Qt, QTimer, QEvent
+from PySide2.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics
+from PySide2.QtCore import QRegExp, Qt, QTimer, QStringListModel
 
 
 class TCLSyntaxHighlighter(QSyntaxHighlighter):
-    def __init__(self, keywords: list[str], parent=None):
+    def __init__(self, keywords: list[str], variables: list[str], parent=None):
         super().__init__(parent)
         self.highlighting_rules = []
+        self.variables = variables
 
         keyword_format = QTextCharFormat()
         keyword_format.setForeground(QColor("#569CD6"))
@@ -27,6 +28,11 @@ class TCLSyntaxHighlighter(QSyntaxHighlighter):
         comment_format = QTextCharFormat()
         comment_format.setForeground(QColor("#6A9955"))
         self.highlighting_rules.append((QRegExp("#[^\n]*"), comment_format))
+        
+
+    def update_variables(self, variables: list[str]):
+        self.variables = variables
+        self.rehighlight()
 
     def highlightBlock(self, text):
         for pattern, format in self.highlighting_rules:
@@ -35,6 +41,14 @@ class TCLSyntaxHighlighter(QSyntaxHighlighter):
             while index >= 0:
                 length = expression.matchedLength()
                 self.setFormat(index, length, format)
+                index = expression.indexIn(text, index + length)
+                
+        for variable in self.variables:
+            expression = QRegExp(r'\$' + QRegExp.escape(variable))
+            index = expression.indexIn(text)
+            while index >= 0:
+                length = expression.matchedLength()
+                self.setFormat(index, length, QColor(173, 216, 230))
                 index = expression.indexIn(text, index + length)
 
 class CustomTooltip(QWidget):
@@ -88,14 +102,17 @@ class CustomTooltip(QWidget):
             self.hide()
         return super().mousePressEvent(event)
 
+
 class TCLEditor(QPlainTextEdit):
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFont(QFont("Monospace", 12))
         self.commands = self.get_tcl_commands()
+        self.variables = self.get_vars()
         self.completer = self.setup_completer()
-        self.highlighter = TCLSyntaxHighlighter(self.commands.keys(), self.document())
+        self.var_completer = self.setup_var_completer()
+        self.highlighter = TCLSyntaxHighlighter(self.commands.keys(), self.variables, self.document())
         self.custom_tooltip = CustomTooltip(self)
         # Set tab stop width
         font = self.font()
@@ -112,16 +129,34 @@ class TCLEditor(QPlainTextEdit):
         completer.activated.connect(self.insertCompletion)
         return completer
 
+    def setup_var_completer(self) -> QCompleter:
+        model = QStringListModel(self.variables)
+        completer = QCompleter( self)
+        completer.setModel(model)
+        completer.setCaseSensitivity(Qt.CaseSensitive)
+        completer.setCompletionMode(QCompleter.PopupCompletion)
+        completer.setWidget(self)
+        completer.activated.connect(self.insertVarCompletion)
+        return completer
+
     def get_tcl_commands(self):
         json_path = Path(__file__).parent.joinpath('tcl_commands.json')
         if not json_path.exists():
-            FileExistsError(f"TCL commands file not found at {json_path}. Run the extractor script first.")
+            raise FileExistsError(f"TCL commands file not found at {json_path}. Run the extractor script first.")
         try:
             with open(json_path, 'r') as f:
                 return json.load(f)
         except Exception as e:
             print(f"Error loading TCL commands:\n{e}")
             return {}
+
+    def get_vars(self):
+        return [var for var in nuke.tcl("info vars").split() if var != "captured_output"]
+
+    def update_variables(self):
+        self.variables = self.get_vars()
+        self.var_completer.model().setStringList(self.variables)
+        self.highlighter.update_variables(self.variables)
 
     def insertCompletion(self, completion):
         if self.completer.widget() != self:
@@ -134,22 +169,25 @@ class TCLEditor(QPlainTextEdit):
             tc.movePosition(QTextCursor.EndOfWord)
             tc.insertText(completion[-extra:])
             self.setTextCursor(tc)
-            # reset completer
             self.completer.setCompletionPrefix('')
+
+    def insertVarCompletion(self, completion):
+        if self.var_completer.widget() != self:
+            return
+
+        tc = self.textCursor()
+        extra = len(completion) - len(self.var_completer.completionPrefix())
+        if extra > 0:
+            tc.movePosition(QTextCursor.Left)
+            tc.movePosition(QTextCursor.EndOfWord)
+            tc.insertText(completion[-extra:])
+            self.setTextCursor(tc)
+            self.var_completer.setCompletionPrefix('')
             
     def textUnderCursor(self):
         tc = self.textCursor()
-        tc.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, 1)
-        if tc.selectedText() == " ":
-            return ""
         tc.select(QTextCursor.WordUnderCursor)
-        word = tc.selectedText()
-        
-        if word in ("}]"):  
-            tc.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, 2)
-            tc.select(QTextCursor.WordUnderCursor)
-            word = tc.selectedText()
-        return word
+        return tc.selectedText()
 
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
@@ -158,19 +196,17 @@ class TCLEditor(QPlainTextEdit):
             self.setFocus()
                 
     def keyPressEvent(self, event):
-        
-        if self.completer and self.completer.popup().isVisible():
+        if (self.completer and self.completer.popup().isVisible()) or (self.var_completer and self.var_completer.popup().isVisible()):
             if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab):
                 event.ignore()
                 return
-
+            
         # Auto-closing feature
         if event.key() in (Qt.Key_ParenLeft, Qt.Key_BracketLeft, Qt.Key_BraceLeft, Qt.Key_QuoteDbl, Qt.Key_Apostrophe) and event.text() in self.auto_pairs:
             opening_char = event.text()
             closing_char = self.auto_pairs[opening_char]
             cursor = self.textCursor()
             if not cursor.hasSelection():
-                # check if the cursor is at the beginning of a word
                 cursor.movePosition(QTextCursor.EndOfWord, QTextCursor.KeepAnchor)
             selected_text = cursor.selectedText()
             if selected_text == opening_char or selected_text in self.auto_pairs.values():
@@ -181,8 +217,13 @@ class TCLEditor(QPlainTextEdit):
             self.setTextCursor(cursor)
             return
 
-        isShortcut = (event.modifiers() == Qt.ControlModifier and
-                      event.key() == Qt.Key_Space)
+        # Variable auto-completion
+        if event.text() == '$':
+            super().keyPressEvent(event)
+            self.showVarCompletion()
+            return
+
+        isShortcut = (event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Space)
 
         if not self.completer or not isShortcut:
             super().keyPressEvent(event)
@@ -216,6 +257,17 @@ class TCLEditor(QPlainTextEdit):
                     self.completer.popup().verticalScrollBar().sizeHint().width())
         self.completer.complete(cr)
 
+    def showVarCompletion(self):
+        completionPrefix = self.textUnderCursor()
+        if completionPrefix != self.var_completer.completionPrefix():
+            self.var_completer.setCompletionPrefix(completionPrefix)
+            self.var_completer.popup().setCurrentIndex(
+                self.var_completer.completionModel().index(0, 0))
+
+        cr = self.cursorRect()
+        cr.setWidth(self.var_completer.popup().sizeHintForColumn(0) +
+                    self.var_completer.popup().verticalScrollBar().sizeHint().width())
+        self.var_completer.complete(cr)
         
     def get_command_description(self, command):
         info = self.commands.get(command, {})
@@ -231,24 +283,14 @@ class TCLEditor(QPlainTextEdit):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            # If tooltip is visible, hide it and do nothing else
             if self.custom_tooltip.isVisible():
                 self.custom_tooltip.hide()
                 return True
             if event.modifiers() == Qt.ControlModifier:
-                # Get the position of the mouse click
                 pos = event.pos()
-                
-                # Get the cursor at the mouse position
                 tc = self.cursorForPosition(pos)
-                
-                # Move to the start of the word
                 tc.movePosition(QTextCursor.StartOfWord, QTextCursor.MoveAnchor)
-                
-                # Move to the end of the word, keeping the anchor at the start
                 tc.movePosition(QTextCursor.EndOfWord, QTextCursor.KeepAnchor)
-                
-                # Get the selected word
                 word = tc.selectedText()
                 
                 description = self.get_command_description(word)
@@ -259,11 +301,9 @@ class TCLEditor(QPlainTextEdit):
                 else:
                     self.custom_tooltip.hide()
                 
-                # The selection is only temporary and won't be visible
                 return True
         
         super().mousePressEvent(event)
-
 
 class TCLEditorPanel(nuke.PanelNode):
         
@@ -304,9 +344,9 @@ class TCLEditorPanel(nuke.PanelNode):
         self.knobChanged(nuke.thisKnob())
 
     def knobChanged(self, knob):
-        if knob == self.run_button:
-            # TODO: update procs and vars
-            pass
+        if knob is self.run_button:
+            self.editor.getObject().qtwidget.update_variables()
+            
 
 class EditorKnob():
 
