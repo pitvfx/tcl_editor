@@ -12,3 +12,6 @@ venv/*
 .venv
 .venv/*
 *tmp*
+
+# Generated on first run from "info vars"
+tcl_builtin_vars.json
