@@ -5,6 +5,12 @@ the Script Editor does for Python.
 
 ![TCL Editor](docs/images/overview.png)
 
+**Made for Nuke Indie users.** In Nuke Indie, Python scripts can only work
+on 10 nodes at a time, which makes batch jobs like renaming, relinking or
+changing knobs on a whole comp impossible. TCL doesn't have that limit, so
+with the TCL Editor you can still script those jobs across as many nodes as
+you need. It works just as well in the full version of Nuke.
+
 Nuke's TCL is handy for quick jobs on nodes and knobs, but typing it into a
 single expression line gets old quickly. The TCL Editor gives you a proper
 editor with:
