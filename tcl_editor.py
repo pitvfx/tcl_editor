@@ -5,9 +5,9 @@ import nuke # pylint: disable=import-error
 import pyui # pylint: disable=import-error
 
 from PySide6.QtWidgets import (QWidget, QApplication, QLabel, QVBoxLayout, QHBoxLayout, QPlainTextEdit,
-                               QCompleter, QTextEdit, QLineEdit, QPushButton)
+                               QCompleter, QTextEdit, QLineEdit, QPushButton, QSplitter, QButtonGroup)
 from PySide6.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics, \
-    QPainter, QTextFormat, QTextDocument
+    QPainter, QTextFormat, QTextDocument, QIcon
 from PySide6.QtCore import Qt, QTimer, QStringListModel, QSize, QRect, QEvent, Signal
 
 
@@ -66,6 +66,13 @@ def scan_line(text: str, state: int = NORMAL):
 
 
 BUILTIN_VARS_FILE = Path(__file__).parent.joinpath('tcl_builtin_vars.json')
+
+
+# Toolbar icons, drawn by icons/make_icons.py.
+ICON_DIR = Path(__file__).parent.joinpath("icons", "toolbar")
+if not ICON_DIR.is_dir():
+    ICON_DIR = None
+ICON_SIZE = QSize(22, 22)
 
 
 def load_builtin_vars() -> set:
@@ -224,6 +231,7 @@ class LineNumberArea(QWidget):
 class TCLEditor(QPlainTextEdit):
 
     runRequested = Signal()
+    lineNumberWidthChanged = Signal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -333,7 +341,9 @@ class TCLEditor(QPlainTextEdit):
         return 12 + self.fontMetrics().horizontalAdvance('9') * digits
 
     def _update_line_number_width(self, *_):
-        self.setViewportMargins(self.line_number_width(), 0, 0, 0)
+        width = self.line_number_width()
+        self.setViewportMargins(width, 0, 0, 0)
+        self.lineNumberWidthChanged.emit(width)
 
     def _update_line_number_area(self, rect, dy):
         if dy:
@@ -803,6 +813,39 @@ class TCLEditor(QPlainTextEdit):
         super().mousePressEvent(event)
 
 
+class OutputView(QPlainTextEdit):
+    """Read-only output with an empty left gutter, so its text lines up with
+    the code next to the editor's line numbers."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setReadOnly(True)
+        self.setFocusPolicy(Qt.ClickFocus)
+        self.gutter = QWidget(self)
+        self.gutter.paintEvent = self._paint_gutter
+        self.gutter_width = 0
+
+    def set_gutter_width(self, width):
+        if width != self.gutter_width:
+            self.gutter_width = width
+            self.setViewportMargins(width, 0, 0, 0)
+            self._place_gutter()
+
+    def _place_gutter(self):
+        cr = self.contentsRect()
+        self.gutter.setGeometry(QRect(cr.left(), cr.top(), self.gutter_width, cr.height()))
+
+    def _paint_gutter(self, event):
+        painter = QPainter(self.gutter)
+        # Same colour as the editor's line number area
+        painter.fillRect(event.rect(), self.palette().base().color().darker(115))
+        painter.end()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._place_gutter()
+
+
 class FindBar(QWidget):
     """Find / replace bar. Enter = next, Shift+Enter = previous, Esc = close."""
 
@@ -911,16 +954,19 @@ class TCLEditorPanel(nuke.PanelNode):
         return self
 
     def build_panel(self):
+        self.file = nuke.File_Knob("file", "file")
+        self.file.setTooltip("File to load/save the code to.")
+        # Toolbar, editor and output are all drawn by the EditorKnob widget.
         self.editor = nuke.PyCustom_Knob("editor", "", "__import__('tcl_editor').EditorKnob(nuke.thisNode())")
+        self.editor.setFlag(nuke.STARTLINE)
+        # Hidden knobs used by run_code in tcl_editor.tcl ("knob this.code" / "knob this.output").
         self.code = nuke.Multiline_Eval_String_Knob("code", "")
         self.code.setFlag(nuke.READ_ONLY|nuke.INVISIBLE)
         self.run_button = nuke.Script_Knob("run", "run", "load tcl_editor.tcl;run_code")
-        self.run_button.setTooltip("Run the code (Ctrl+Enter)")
-        self.run_button.setFlag(nuke.STARTLINE)
-        self.clear_button = nuke.Script_Knob("clear", "clear", 'knob this.output ""')
+        self.run_button.setFlag(nuke.INVISIBLE)
         self.output = nuke.Multiline_Eval_String_Knob("output", "")
-        self.output.setFlag(nuke.READ_ONLY)
-        for k in (self.editor, self.code, self.run_button, self.clear_button, self.output):
+        self.output.setFlag(nuke.READ_ONLY|nuke.INVISIBLE)
+        for k in (self.file, self.editor, self.code, self.run_button, self.output):
             self.addKnob(k)
         self.dialog.add(self.createWidget())
 
@@ -950,11 +996,101 @@ class EditorKnob():
         self.qtwidget.textChanged.connect(self.code_changed)
         self.qtwidget.runRequested.connect(self.run)
 
+        # Input: find bar + editor
+        self.input_widget = QWidget()
+        input_layout = QVBoxLayout(self.input_widget)
+        input_layout.setContentsMargins(0, 0, 0, 0)
+        input_layout.setSpacing(2)
+        input_layout.addWidget(FindBar(self.qtwidget))
+        input_layout.addWidget(self.qtwidget)
+
+        # Output
+        self.output_view = OutputView()
+        self.output_view.setFont(self.qtwidget.font())
+        self.output_view.set_gutter_width(self.qtwidget.line_number_width())
+        self.qtwidget.lineNumberWidthChanged.connect(self.output_view.set_gutter_width)
+
+        # Draggable divider between input and output, like the Script Editor
+        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.addWidget(self.input_widget)
+        self.splitter.addWidget(self.output_view)
+        self.splitter.setStretchFactor(0, 2)
+        self.splitter.setStretchFactor(1, 1)
+
         self.widget = QWidget()
+        self.widget.setMinimumHeight(400)
         layout = QVBoxLayout(self.widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(FindBar(self.qtwidget))
-        layout.addWidget(self.qtwidget)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(2)
+        layout.addLayout(self.build_toolbar())
+        layout.addWidget(self.splitter)
+        self.refresh_output()
+
+    def build_toolbar(self):
+        """Icon buttons laid out like the Script Editor's toolbar."""
+        def button(text, tooltip, slot, icon_on, icon_off=None):
+            icon = QIcon()
+            if ICON_DIR:
+                icon.addFile(str(ICON_DIR / icon_on), ICON_SIZE, QIcon.Normal, QIcon.On)
+                if icon_off:
+                    icon.addFile(str(ICON_DIR / icon_off), ICON_SIZE, QIcon.Normal, QIcon.Off)
+            # Fall back to text if Nuke's icons can't be found.
+            b = QPushButton(icon, "" if ICON_DIR else text)
+            b.setFocusPolicy(Qt.NoFocus)
+            b.setToolTip(tooltip)
+            b.clicked.connect(slot)
+            return b
+
+        load = button("load", "Load the code from the file", self.load, "load.png")
+        save = button("save", "Save the code to the file", self.save, "save.png")
+        run = button("run", "Run the code<br>Hotkey: Ctrl+Return", self.run, "run.png")
+        show_input = button("input", "Show input only", lambda: self.set_view(True, False),
+                            "inputOn.png", "inputOff.png")
+        show_output = button("output", "Show output only", lambda: self.set_view(False, True),
+                             "outputOn.png", "outputOff.png")
+        show_both = button("both", "Show both input and output", lambda: self.set_view(True, True),
+                           "bothOn.png", "bothOff.png")
+        clear_input = button("clear", "Clear input", lambda: self.set_code(""), "clearHistory.png")
+        clear_output = button("clear output", "Clear output window", self.clear_output, "clearOutput.png")
+
+        self.view_buttons = QButtonGroup(self.widget)
+        for b in (show_input, show_output, show_both):
+            b.setCheckable(True)
+            self.view_buttons.addButton(b)
+        show_both.setChecked(True)
+
+        toolbar = QHBoxLayout()
+        self.toolbar = toolbar
+        self.align_toolbar(self.qtwidget.line_number_width())
+        self.qtwidget.lineNumberWidthChanged.connect(self.align_toolbar)
+        toolbar.setSpacing(0)
+        for item in (load, save, run, 15, show_input, show_output, show_both, 15, clear_input, clear_output):
+            if isinstance(item, int):
+                toolbar.addSpacing(item)
+            else:
+                toolbar.addWidget(item)
+        toolbar.setAlignment(Qt.AlignLeft)
+        return toolbar
+
+    def align_toolbar(self, line_number_width):
+        """Indent the buttons so they start where the code starts."""
+        left = self.qtwidget.frameWidth() + line_number_width
+        if self.toolbar.contentsMargins().left() != left:
+            self.toolbar.setContentsMargins(left, 0, 0, 0)
+
+    def set_view(self, show_input, show_output):
+        self.input_widget.setVisible(show_input)
+        self.output_view.setVisible(show_output)
+
+    def refresh_output(self):
+        self.output_view.setPlainText(self.panel.output.value())
+        scrollbar = self.output_view.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def clear_output(self):
+        self.panel.output.setValue("")
+        self.output_view.clear()
 
     def code_changed(self):
         self.panel.code.setValue(self.qtwidget.toPlainText())
@@ -964,12 +1100,53 @@ class EditorKnob():
         self.after_run()
 
     def after_run(self):
+        self.refresh_output()
         self.qtwidget.update_variables()
         try:
             line = int(nuke.tcl("set ::tcl_editor_error_line"))
         except (RuntimeError, ValueError):
             line = 0
         self.qtwidget.set_error_line(line)
+
+    def set_code(self, text):
+        """Replace the editor text as one undoable edit."""
+        cursor = QTextCursor(self.qtwidget.document())
+        cursor.select(QTextCursor.Document)
+        cursor.insertText(text)
+
+    def file_path(self, save=False):
+        """The path in the file knob, or ask for one if it is empty."""
+        path = self.panel.file.evaluate() or ""
+        if path:
+            return path
+        path = nuke.getFilename("Save TCL file" if save else "Load TCL file", "*.tcl",
+                                type="save" if save else None)
+        if not path:
+            return ""
+        if save and not Path(path).suffix:
+            path += ".tcl"
+        if save and Path(path).exists() and not nuke.ask(f"{path} already exists.\nOverwrite it?"):
+            return ""
+        self.panel.file.setValue(path)
+        return path
+
+    def load(self):
+        path = self.file_path()
+        if not path:
+            return
+        try:
+            self.set_code(Path(path).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError) as e:
+            nuke.message(f"Could not load {path}:\n{e}")
+
+    def save(self):
+        path = self.file_path(save=True)
+        if not path:
+            return
+        try:
+            Path(path).write_text(self.qtwidget.toPlainText(), encoding="utf-8")
+        except OSError as e:
+            nuke.message(f"Could not save {path}:\n{e}")
 
     def makeUI(self):
         return self.widget
