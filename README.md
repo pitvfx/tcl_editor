@@ -5,11 +5,17 @@ the Script Editor does for Python.
 
 ![TCL Editor](docs/images/overview.png)
 
-**Made for Nuke Indie users.** In Nuke Indie, Python scripts can only work
-on 10 nodes at a time, which makes batch jobs like renaming, relinking or
-changing knobs on a whole comp impossible. TCL doesn't have that limit, so
-with the TCL Editor you can still script those jobs across as many nodes as
-you need. It works just as well in the full version of Nuke.
+### Why TCL? Nuke Indie
+
+Nuke Indie restricts Python. As Foundry's
+[Nuke Indie FAQ](https://www.foundry.com/products/nuke-family/nuke-indie/faq)
+puts it: *"Calling greater than 10 nodes is not supported, limiting the ability
+for automation within scripts."*
+
+That rules out a lot of everyday helpers, like renaming Read nodes, fixing
+file paths or changing a knob on every node in a comp. Nuke's built-in TCL
+can still do these jobs, and the TCL Editor makes writing it comfortable.
+It works just as well in the full version of Nuke.
 
 Nuke's TCL is handy for quick jobs on nodes and knobs, but typing it into a
 single expression line gets old quickly. The TCL Editor gives you a proper
