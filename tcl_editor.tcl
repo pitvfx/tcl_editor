@@ -13,8 +13,14 @@ proc puts {args} {
 }
 
 proc run_code {} {
+    # Line of the editor code that raised the error, 0 if none
+    set ::tcl_editor_error_line 0
     if {[catch {uplevel 1 [knob this.code]} result]} {
         set new_output [list "ERROR: $result"]
+        # The last "uplevel" body line in the trace is the line in the editor
+        foreach {- line} [regexp -all -inline {\("uplevel" body line (\d+)\)} $::errorInfo] {
+            set ::tcl_editor_error_line $line
+        }
     } else {
         set new_output [get_and_clear_output]
     }
