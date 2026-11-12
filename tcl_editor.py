@@ -3,9 +3,9 @@ from pathlib import Path
 import nuke # pylint: disable=import-error
 import pyui # pylint: disable=import-error
 
-from PySide2.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPlainTextEdit, QCompleter
-from PySide2.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics
-from PySide2.QtCore import QRegExp, Qt, QTimer, QStringListModel
+from PySide6.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPlainTextEdit, QCompleter
+from PySide6.QtGui import  QFont,QColor, QTextCharFormat, QSyntaxHighlighter, QTextCursor, QFontMetrics
+from PySide6.QtCore import QRegularExpression, Qt, QTimer, QStringListModel
 
 
 class TCLSyntaxHighlighter(QSyntaxHighlighter):
@@ -17,17 +17,17 @@ class TCLSyntaxHighlighter(QSyntaxHighlighter):
         keyword_format = QTextCharFormat()
         keyword_format.setForeground(QColor("#569CD6"))
         for word in keywords:
-            pattern = QRegExp("\\b" + word + "\\b")
+            pattern = QRegularExpression("\\b" + word + "\\b")
             self.highlighting_rules.append((pattern, keyword_format))
 
         string_format = QTextCharFormat()
         string_format.setForeground(QColor("#CE9178"))
-        self.highlighting_rules.append((QRegExp("\".*\""), string_format))
-        self.highlighting_rules.append((QRegExp("\'.*\'"), string_format))
-        
+        self.highlighting_rules.append((QRegularExpression("\".*\""), string_format))
+        self.highlighting_rules.append((QRegularExpression("\'.*\'"), string_format))
+
         comment_format = QTextCharFormat()
         comment_format.setForeground(QColor("#6A9955"))
-        self.highlighting_rules.append((QRegExp("#[^\n]*"), comment_format))
+        self.highlighting_rules.append((QRegularExpression("#[^\n]*"), comment_format))
         
 
     def update_variables(self, variables: list[str]):
@@ -36,20 +36,17 @@ class TCLSyntaxHighlighter(QSyntaxHighlighter):
 
     def highlightBlock(self, text):
         for pattern, format in self.highlighting_rules:
-            expression = QRegExp(pattern)
-            index = expression.indexIn(text)
-            while index >= 0:
-                length = expression.matchedLength()
-                self.setFormat(index, length, format)
-                index = expression.indexIn(text, index + length)
-                
+            iterator = pattern.globalMatch(text)
+            while iterator.hasNext():
+                match = iterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), format)
+
         for variable in self.variables:
-            expression = QRegExp(r'\$' + QRegExp.escape(variable))
-            index = expression.indexIn(text)
-            while index >= 0:
-                length = expression.matchedLength()
-                self.setFormat(index, length, QColor(173, 216, 230))
-                index = expression.indexIn(text, index + length)
+            expression = QRegularExpression(r'\$' + QRegularExpression.escape(variable))
+            iterator = expression.globalMatch(text)
+            while iterator.hasNext():
+                match = iterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), QColor(173, 216, 230))
 
 class CustomTooltip(QWidget):
     def __init__(self, parent=None):
@@ -287,7 +284,7 @@ class TCLEditor(QPlainTextEdit):
                 self.custom_tooltip.hide()
                 return True
             if event.modifiers() == Qt.ControlModifier:
-                pos = event.pos()
+                pos = event.position().toPoint()
                 tc = self.cursorForPosition(pos)
                 tc.movePosition(QTextCursor.StartOfWord, QTextCursor.MoveAnchor)
                 tc.movePosition(QTextCursor.EndOfWord, QTextCursor.KeepAnchor)
